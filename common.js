@@ -103,7 +103,9 @@ function assess(dam, series, i, ts) {
     cum += I * M3_PER_HOUR;
     qPeak = Math.max(qPeak, (S0 + cum - Vcap) / ((k + 1) * M3_PER_HOUR));
   });
-  const q = Math.max(0, (S0 + cum - storageOf(dam, guide.level - off)) / (HORIZON * M3_PER_HOUR), qPeak);
+  const need = Math.max(0, (S0 + cum - storageOf(dam, guide.level - off)) / (HORIZON * M3_PER_HOUR), qPeak);
+  // 곡선에 평평한 구간이 있으면 수위로는 "기준 아래"인데 저수량으로는 조금 넘는 일이 생긴다 → 정상이면 지금 양으로 충분
+  const q = status === "ok" ? Math.min(need, O0) : need;
   const out = Math.max(q, O0);
   // 되감기라서 알 수 있는 "그 뒤 12시간에 실제로 일어난 일"
   const actualL = series.L.slice(i + 1, i + 1 + HORIZON);

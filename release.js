@@ -115,7 +115,8 @@ function drawDam(dam, a, scale) {
   const yp = y(dam.plan), yg = y(a.guide.level);
   const thr = [[yp, `계획홍수위 ${n(dam.plan, 1)}m`, "var(--bad)", -5]];
   if (a.guide.level !== dam.plan) thr.push([yg, `${a.guide.name} ${n(a.guide.level, 1)}m`, "var(--warn)", yg - yp < 16 ? 13 : -5]);
-  const crestY = Math.max(TOP - 8, y(dam.crest ?? dam.plan + 1));
+  const crest = dam.crest > dam.plan ? dam.crest : dam.plan + 1;   // 조정지 4곳은 제원의 댐마루가 0으로 적혀 있다
+  const crestY = Math.max(TOP - 8, y(crest));
   const flow = (cls, d) => `<path class="${cls} base" d="${d}" fill="none" stroke="var(--water)" stroke-linecap="round" opacity="0.35"/><path class="${cls} flow" d="${d}" fill="none" stroke="var(--water-deep)" stroke-width="2" stroke-linecap="round"/>`;
   $("#anim").innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(dam.name)} 단면: 물 높이와 들어오고 나가는 물">
     <defs><clipPath id="basin"><polygon points="0,${TOP} 250,${TOP} 250,${BOT} 70,${BOT} 0,${TOP + 80}"/></clipPath></defs>
