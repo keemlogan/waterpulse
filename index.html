@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>WaterPulse · 비가 오면 댐에 언제 물이 몰려올까</title>
+<meta name="description" content="K-water 댐 59곳의 실제 시간 자료로 확인한 강우 뒤 유입 반응 시간, 3·6·12시간 뒤 유입량 예측, 20년 추세.">
+<meta name="color-scheme" content="light dark">
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main class="app" id="app" aria-busy="true">
+  <header class="hero">
+    <p class="eyebrow">WaterPulse · 실데이터 사전 시뮬레이션</p>
+    <h1 id="headline">비가 오면, 댐에는 몇 시간 뒤에 물이 몰려올까요</h1>
+    <p class="lede" id="lede"></p>
+  </header>
+
+  <section class="stats" id="stats" aria-label="핵심 숫자"></section>
+
+  <section class="block" aria-labelledby="t-list" data-part="renderList">
+    <div class="block-head">
+      <h2 id="t-list">댐별 반응 시간</h2>
+      <p class="sub">큰비가 가장 세게 내린 때부터 댐 유입량이 가장 많아질 때까지 걸린 시간의 가운데 값이에요.</p>
+    </div>
+    <div class="controls">
+      <label class="search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg>
+        <input id="q" type="search" placeholder="댐 이름 검색" autocomplete="off" aria-label="댐 이름 검색">
+      </label>
+      <div class="seg" id="sort" role="group" aria-label="정렬">
+        <button data-sort="fast" aria-pressed="true">빠른 순</button>
+        <button data-sort="slow" aria-pressed="false">느린 순</button>
+        <button data-sort="name" aria-pressed="false">이름 순</button>
+      </div>
+      <div class="chips" id="kinds" role="group" aria-label="종류"></div>
+    </div>
+    <ul class="list" id="list"></ul>
+    <p class="foot" id="list-foot"></p>
+  </section>
+
+  <section class="block" aria-labelledby="t-cmp" data-part="renderCompare">
+    <div class="block-head">
+      <h2 id="t-cmp">왜 댐마다 다를까요</h2>
+      <p class="sub" id="cmp-sub"></p>
+    </div>
+    <figure class="chart" id="cmp"></figure>
+    <p class="note" id="cmp-note"></p>
+  </section>
+
+  <section class="block" aria-labelledby="t-up" data-part="renderUpstream">
+    <div class="block-head">
+      <h2 id="t-up">상류를 보면 더 잘 맞을까요</h2>
+      <p class="sub">댐 자료만 쓴 예측과, 상류 비·강 관측소까지 넣은 예측의 오차를 비교했어요. 막대가 길수록 “지금 양 그대로”라고 찍는 것보다 정확해요.</p>
+    </div>
+    <div class="seg small" id="up-h" role="group" aria-label="예측 시간">
+      <button data-h="3" aria-pressed="false">3시간 뒤</button>
+      <button data-h="6" aria-pressed="true">6시간 뒤</button>
+      <button data-h="12" aria-pressed="false">12시간 뒤</button>
+    </div>
+    <div id="upstream"></div>
+    <p class="note" id="up-note"></p>
+  </section>
+
+  <section class="block" aria-labelledby="t-trend" data-part="renderTrend">
+    <div class="block-head">
+      <h2 id="t-trend">20년 동안 큰물이 늘었을까요</h2>
+      <p class="sub" id="trend-sub"></p>
+    </div>
+    <figure class="chart" id="trend"></figure>
+    <p class="note" id="trend-note"></p>
+  </section>
+
+  <section class="block" aria-labelledby="t-how" data-part="renderSteps">
+    <div class="block-head">
+      <h2 id="t-how">이렇게 만들었어요</h2>
+      <p class="sub">팀 프로젝트 실제 구성과 같은 순서로, 오늘 받은 실제 데이터로 한 번 돌려 봤어요.</p>
+    </div>
+    <ol class="steps" id="steps"></ol>
+    <p class="note" id="how-note"></p>
+  </section>
+
+  <footer class="footer" id="footer" data-part="renderFooter"></footer>
+</main>
+
+<div class="scrim" id="scrim" hidden></div>
+<section class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title" tabindex="-1" hidden>
+  <div class="grab" aria-hidden="true"></div>
+  <button class="close" id="close" aria-label="닫기">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+  </button>
+  <div class="sheet-body" id="sheet-body"></div>
+</section>
+
+<script src="app.js" defer></script>
+</body>
+</html>
