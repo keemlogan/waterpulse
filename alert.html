@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>WaterPulse · 재난 상황판</title>
+<meta name="description" content="과거 큰비 시점으로 되감아, 모든 댐의 지금 수위와 12시간 뒤 예상 수위로 넘칠 위험이 있는 곳을 먼저 보여 줘요.">
+<meta name="color-scheme" content="light dark">
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main class="app" id="app" aria-busy="true">
+  <nav class="tabs" aria-label="화면">
+    <a href="./">분석 결과</a>
+    <a href="release.html">방류 계산기</a>
+    <a href="alert.html" aria-current="page">재난 상황판</a>
+  </nav>
+  <header class="hero">
+    <p class="eyebrow">재난 상황판 · 과거로 되감기</p>
+    <h1 id="al-title">12시간 안에 넘칠 위험이 있는 곳을 먼저 보여 드려요</h1>
+    <p class="lede">모든 댐의 지금 수위와, 지금처럼 내보낼 때 12시간 뒤 예상 수위를 봐요. 과거 큰비 시점을 골라 그때 어떻게 보였을지 되감아 보세요.</p>
+  </header>
+
+  <section class="block" aria-labelledby="t-when">
+    <div class="block-head"><h2 id="t-when">언제로 돌아갈까요</h2></div>
+    <div class="picker" id="timeline"></div>
+    <div class="sum3" id="sum"></div>
+    <button class="btn danger" id="send" hidden>긴급 알림 보내기</button>
+  </section>
+
+  <section class="block" aria-labelledby="t-urgent" data-part="urgent">
+    <div class="block-head"><h2 id="t-urgent">가장 급한 곳</h2><p class="sub">막대는 저수위부터 계획홍수위(빨간 끝)까지예요. 파란 부분이 지금 수위, 검은 표시가 12시간 안 예상 최고 수위예요.</p></div>
+    <ul class="list" id="urgent"></ul>
+  </section>
+
+  <section class="block" aria-labelledby="t-river" data-part="rivers">
+    <div class="block-head"><h2 id="t-river">5대 강별로 보기</h2><p class="sub">칸이 찬 정도가 지금 수위예요. 맨 위 점선이 계획홍수위예요.</p></div>
+    <div id="rivers"></div>
+  </section>
+
+  <section class="block" aria-labelledby="t-check" data-part="check">
+    <div class="block-head"><h2 id="t-check">이 판정, 맞았을까요</h2><p class="sub" id="check-sub"></p></div>
+    <div class="sum3" id="check"></div>
+    <p class="note" id="check-note"></p>
+  </section>
+
+  <section class="block" aria-labelledby="t-rule">
+    <div class="block-head"><h2 id="t-rule">판정 기준</h2></div>
+    <ol class="steps">
+      <li><b>위험</b><p>지금처럼 내보낼 때 12시간 안에 계획홍수위에 닿을 것으로 예상돼요.</p></li>
+      <li><b>경계</b><p>12시간 안에 관리 기준 수위(장마철 홍수기제한수위, 그 밖엔 상시만수위)를 넘을 것으로 예상돼요.</p></li>
+      <li><b>정상</b><p>12시간 동안 기준 아래로 예상돼요.</p></li>
+    </ol>
+    <p class="note">대상은 물을 담아 두는 댐과 조정지예요. 보·하굿둑은 흘려보내는 시설이라 제원의 계획홍수위가 평소 수위와 맞지 않아 판정에서 뺐어요. 예측은 그 해 자료를 보지 않고 배운 모델이에요. 교육용 시뮬레이션이며 실제 재난 판단에 쓰지 마세요.</p>
+  </section>
+
+  <footer class="footer"><p>자료: 공공데이터포털 한국수자원공사 수문 운영 정보·수문 제원 현황 (2026년 10월 5일 호출).</p></footer>
+</main>
+
+<div class="scrim" id="scrim" hidden></div>
+<section class="sheet" id="dam-sheet" role="dialog" aria-modal="true" aria-labelledby="ds-title" tabindex="-1" hidden>
+  <div class="grab" aria-hidden="true"></div>
+  <button class="close" aria-label="닫기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+  <div class="sheet-body"></div>
+</section>
+<section class="sheet" id="send-sheet" role="dialog" aria-modal="true" aria-labelledby="ss-title" tabindex="-1" hidden>
+  <div class="grab" aria-hidden="true"></div>
+  <button class="close" aria-label="닫기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+  <div class="sheet-body"></div>
+</section>
+<div class="toast" id="toast" role="status"></div>
+
+<script src="common.js" defer></script>
+<script src="alert.js" defer></script>
+</body>
+</html>
