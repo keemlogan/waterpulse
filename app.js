@@ -2,7 +2,7 @@
 
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-const n = (v, d = 0) => Number(v).toLocaleString("ko-KR", { maximumFractionDigits: d, minimumFractionDigits: d });
+const n = (v, d = 0) => (Number.isFinite(Number(v)) && v !== null ? Number(v).toLocaleString("ko-KR", { maximumFractionDigits: d, minimumFractionDigits: d }) : "–");
 const CHEVRON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
 const LAG_MAX = 48;          // 목록 막대와 비교 그림의 세로축 끝(시간)
 const FEW_EVENTS = 10;       // 큰비가 이보다 적으면 "참고용"
@@ -23,7 +23,7 @@ fetch("data/summary.json")
   .then((data) => {
     D = data;
     [renderHero, renderKinds, renderList, renderCompare, renderUpstream, renderTrend, renderSteps, renderFooter].forEach(safe);
-    openFromHash();
+    safe(openFromHash);
   })
   .catch(() => {
     $("#headline").textContent = "자료를 불러오지 못했어요";
@@ -111,14 +111,22 @@ $("#list").addEventListener("click", (e) => {
 /* 바텀시트 — 열면 주소가 #dam=코드로 바뀌어 그대로 공유할 수 있다 */
 let lastFocus = null;
 let closeTimer = 0;
+let pushed = false;          // 목록에서 열었으면 기록을 하나 쌓아 휴대폰 "뒤로"가 시트를 닫게 한다
 
-function openSheet(code, from) {
+function openSheet(code, from, push = true) {
   const d = D.dams.find((x) => x.code === code);
   if (!d) return;
   clearTimeout(closeTimer);
-  lastFocus = from;
+  lastFocus = from || lastFocus;
   $("#sheet-body").innerHTML = sheetHTML(d);
-  if (d.event) drawEvent($(".ev-chart", $("#sheet-body")), d.event);
+  if (d.event) {
+    try {
+      drawEvent($(".ev-chart", $("#sheet-body")), d.event);
+    } catch (e) {
+      $(".ev-sec", $("#sheet-body")).hidden = true;   // 그림만 빼고 나머지는 보여 준다
+      console.error("drawEvent", e);
+    }
+  }
   const sheet = $("#sheet"), scrim = $("#scrim");
   sheet.hidden = false;
   scrim.hidden = false;
@@ -130,12 +138,17 @@ function openSheet(code, from) {
   $("#app").inert = true;
   document.body.style.overflow = "hidden";
   sheet.focus({ preventScroll: true });   // 시트 자체에 초점: 화면 읽기 프로그램이 제목부터 읽는다
-  if (location.hash !== `#dam=${code}`) history.replaceState(null, "", `${location.pathname}${location.search}#dam=${code}`);
+  if (location.hash !== `#dam=${code}`) {
+    if (push) {
+      history.pushState(null, "", `${location.pathname}${location.search}#dam=${code}`);
+      pushed = true;
+    } else history.replaceState(null, "", `${location.pathname}${location.search}#dam=${code}`);
+  }
 }
 
 function closeSheet() {
   const sheet = $("#sheet"), scrim = $("#scrim");
-  if (sheet.hidden) return;
+  if (!sheet.classList.contains("on")) return;
   sheet.classList.remove("on");
   scrim.classList.remove("on");
   $("#app").inert = false;
@@ -145,16 +158,20 @@ function closeSheet() {
     scrim.hidden = true;
   }, matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : SHEET_MS);
   (lastFocus && document.contains(lastFocus) ? lastFocus : $("#q")).focus({ preventScroll: true });
-  history.replaceState(null, "", `${location.pathname}${location.search}`);
+  if (pushed) {
+    pushed = false;
+    history.back();
+  } else if (location.hash) history.replaceState(null, "", `${location.pathname}${location.search}`);
 }
 
 function openFromHash() {
   const m = location.hash.match(/^#dam=(\d+)$/);
-  if (m) openSheet(m[1], null);
-  else closeSheet();
+  if (m) return openSheet(m[1], null, false);
+  pushed = false;              // "뒤로"로 이미 기록이 빠졌으니 다시 빼지 않는다
+  closeSheet();
 }
 
-window.addEventListener("hashchange", openFromHash);
+window.addEventListener("hashchange", () => safe(openFromHash));
 $("#close").addEventListener("click", closeSheet);
 $("#scrim").addEventListener("click", closeSheet);
 document.addEventListener("keydown", (e) => {
@@ -168,18 +185,18 @@ function sheetHTML(d) {
   const hs = ["3", "6", "12"].filter((h) => fc[h] && fc[h].skill != null);
   const allWorse = hs.length && hs.every((h) => fc[h].skill <= 0);
   const fcRows = hs.map((h) => barRow(`${h}시간 뒤`, fc[h].skill, "var(--blue)")).join("");
-  const fcHigh = hs.filter((h) => fc[h].skill_high != null).map((h) => barRow(`${h}시간 뒤`, fc[h].skill_high, "var(--blue)")).join("");
+  const fcHigh = ["3", "6", "12"].filter((h) => fc[h] && fc[h].skill_high != null).map((h) => barRow(`${h}시간 뒤`, fc[h].skill_high, "var(--blue)")).join("");
   const q = d.quality || {};
   const ev = d.event;
   return `
     <div class="hd"><span class="kind">${esc(d.name)} · ${esc(d.kind)}</span><h3 id="sheet-title">${title}</h3>
       ${few ? `<p class="sub">큰비가 ${n(d.lag.events)}번뿐이라 참고용으로 봐 주세요.</p>` : ""}</div>
-    ${ev ? `<div class="sec"><h4>큰비가 왔을 때</h4><p class="sub">${esc(ev.label)}</p>
+    ${ev ? `<div class="sec ev-sec"><h4>큰비가 왔을 때</h4><p class="sub">${esc(ev.label)}</p>
       <figure class="chart ev-chart"></figure>
       <p class="sub">비가 가장 셌던 ${esc(ev.ts[ev.rain_peak_i].slice(5))} → 유입이 가장 많았던 ${esc(ev.ts[ev.inflow_peak_i].slice(5))}, ${n(ev.lag_h)}시간 차이</p></div>` : ""}
     ${hs.length ? `<div class="sec"><h4>몇 시간 뒤를 맞힐 수 있을까요</h4><p class="sub">2024–2025년으로 시험했어요. “지금 양 그대로”라고 찍을 때보다 오차가 몇 % 줄었는지예요.</p><div class="fc">${fcRows}</div>
       ${fcHigh ? `<p class="sub fc-sub">큰물(상위 5%) 때만 보면</p><div class="fc">${fcHigh}</div>` : ""}
-      ${allWorse ? `<p class="sub fc-sub">이 댐은 아직 “그대로 찍기”보다 나은 예측을 못 했어요. 0 이하 유입량이 ${n(q.inflow_le0_pct || 0)}%여서 배울 신호가 약해요.</p>` : ""}</div>` : ""}
+      ${allWorse ? `<p class="sub fc-sub">이 댐은 아직 “그대로 찍기”보다 나은 예측을 못 했어요. 원인은 아직 확인하지 못했고, 아래 데이터 상태를 함께 봐 주세요.</p>` : ""}</div>` : ""}
     <div class="sec"><h4>데이터 상태</h4><dl class="kv">
       <dt>2020–2025 시간 자료</dt><dd>${n(q.rows || 0)}줄 (${n(q.coverage || 0, 1)}%)</dd>
       <dt>유입량 0 이하</dt><dd>${n(q.inflow_le0_pct || 0, 1)}%</dd>
@@ -212,8 +229,8 @@ function drawEvent(fig, ev) {
   const path = ev.inflow.map((v, i) => (v == null ? null : `${x(i).toFixed(1)},${fy(v).toFixed(1)}`)).filter(Boolean).join(" L");
   s += `<path d="M${path}" fill="none" stroke="var(--flow)" stroke-width="2" stroke-linejoin="round"/>`;
   s += `<line class="tip-line" x1="${x(ri)}" x2="${x(ri)}" y1="${TOP}" y2="${fy(0)}"/><line class="tip-line" x1="${x(fi)}" x2="${x(fi)}" y1="${TOP}" y2="${fy(0)}"/>`;
-  s += `<line x1="${x(ri)}" x2="${x(fi)}" y1="${TOP + RH + GAP / 2 - 4}" y2="${TOP + RH + GAP / 2 - 4}" stroke="var(--text)" stroke-width="1.5"/>`;
-  s += `<text class="lbl" x="${(x(ri) + x(fi)) / 2}" y="${TOP + RH + GAP / 2 - 8}" text-anchor="middle">${n(ev.lag_h)}시간</text>`;
+  s += `<line x1="${x(ri)}" x2="${x(fi)}" y1="${TOP + RH + GAP / 2 + 2}" y2="${TOP + RH + GAP / 2 + 2}" stroke="var(--text)" stroke-width="1.5"/>`;
+  s += `<text class="lbl halo" x="${(x(ri) + x(fi)) / 2}" y="${TOP + RH + GAP / 2 - 2}" text-anchor="middle">${n(ev.lag_h)}시간</text>`;
   if (ev.inflow[fi] != null) s += `<circle cx="${x(fi)}" cy="${fy(ev.inflow[fi])}" r="4" fill="var(--flow)" stroke="var(--bg)" stroke-width="2"/>`;
   s += `<text x="${L}" y="${H - 4}">${esc(ev.ts[0].slice(5))}</text><text x="${W - R}" y="${H - 4}" text-anchor="end">${esc(ev.ts[nPts - 1].slice(5))}</text>`;
   s += `<line class="tip-line cursor" x1="0" x2="0" y1="${TOP}" y2="${fy(0)}" visibility="hidden"/></svg><div class="tip" hidden></div>`;
