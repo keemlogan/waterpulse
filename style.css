@@ -244,7 +244,7 @@ h2 { margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -0.01em; }
 .anim .drop { animation: fall linear infinite; animation-duration: 0.9s; }
 @keyframes flow { to { stroke-dashoffset: -32; } }
 @keyframes fall { from { transform: translateY(-12px); opacity: 0; } 30% { opacity: 1; } to { transform: translateY(26px); opacity: 0; } }
-.anim .thr { font-size: 10px; font-weight: 700; }
+.anim .thr { font-size: 10px; font-weight: 700; paint-order: stroke; stroke: var(--band); stroke-width: 3px; stroke-linejoin: round; }
 .anim .lv { font-size: 13px; font-weight: 700; fill: var(--text); paint-order: stroke; stroke: var(--band); stroke-width: 3px; font-variant-numeric: tabular-nums; }
 .legend2 { display: flex; flex-wrap: wrap; gap: 6px 14px; padding: 10px 24px 0; font-size: 13px; color: var(--text2); }
 .legend2 i { display: inline-block; width: 14px; height: 3px; border-radius: 2px; margin-right: 6px; vertical-align: middle; }

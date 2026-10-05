@@ -176,9 +176,9 @@ function renderCheckAll() {
 /* 넘친 것만이 아니라 "운영자가 손을 쓴 때"까지 넓혀 비교. 숫자가 말하는 만큼만 말한다 */
 function actedNote(c) {
   const d = c.danger ? c.dangerActed / c.danger : null, o = c.ok ? c.okActed / c.ok : null;
-  const base = `실제로 넘쳤거나 그 뒤 12시간 평균 방류를 지금보다 20%+10톤 넘게 늘린 때까지 넓혀 보면, “위험”이었던 때는 <b>${pct(c.dangerActed, c.danger)}</b>, “정상”이었던 때는 ${pct(c.okActed, c.ok)}였어요.`;
+  const base = `실제로 계획홍수위에 닿았거나 그 뒤 12시간 평균 방류를 지금보다 20%+10톤 넘게 늘린 때까지 넓혀 보면, “위험”이었던 때는 <b>${pct(c.dangerActed, c.danger)}</b>, “정상”이었던 때는 ${pct(c.okActed, c.ok)}였어요.`;
   if (d == null || o == null) return base;
-  if (d >= o * 2) return `${base} “위험” 판정이 실제로 손을 써야 했던 때와 꽤 겹친다는 뜻이에요.`;
+  if (d >= o * 2) return `${base} “위험” 판정이 운영자가 방류를 크게 늘린 때와 꽤 겹친다는 뜻이에요. 다만 대신 쓴 기준이라 참고로만 봐 주세요.`;
   if (d > o) return `${base} 차이가 크지 않아, “위험” 판정만으로 손쓸 때를 가려내기엔 부족해요.`;
   return `${base} “위험” 판정이 실제 운영과 거의 맞지 않았어요.`;
 }
