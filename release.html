@@ -21,6 +21,7 @@
     <p class="eyebrow">방류 계산기 · 과거로 되감기</p>
     <h1>큰비가 오기 전, 얼마나 내보내야 했을까요</h1>
     <p class="lede">과거 큰비 시점을 골라 보세요. 그때까지의 자료만 보고 앞으로 12시간을 내다본 뒤, 수위를 기준 아래로 지키려면 얼마나 내보내야 했는지 계산해요.</p>
+    <p class="fine">교육용 시뮬레이션이에요. 실제 방류 판단에 쓰지 마세요.</p>
   </header>
 
   <section class="block" aria-labelledby="t-when" data-part="timeline">
@@ -31,8 +32,9 @@
 
   <section class="block" aria-labelledby="answer-title" data-part="answer">
     <div class="answer"><h2 id="answer-title"></h2><p id="answer-sub"></p><div id="answer-warn"></div></div>
+    <div id="detail">
     <div class="kpis" id="kpis"></div>
-    <figure class="anim" id="anim" aria-label="댐 단면 움직임"></figure>
+    <figure class="anim" id="anim"></figure>
     <p class="anim-cap" id="anim-cap" aria-live="polite"></p>
     <div class="seg small" id="mode" role="group" aria-label="12시간 미리 보기 방식">
       <button data-mode="keep" aria-pressed="false">지금처럼 두면</button>
@@ -40,21 +42,22 @@
       <button data-mode="actual" aria-pressed="false">실제로는</button>
     </div>
     <button class="btn ghost" id="preview">12시간 미리 보기</button>
+    </div>
   </section>
 
-  <section class="block" aria-labelledby="t-lvl" data-part="chart">
+  <section class="block" aria-labelledby="t-lvl" data-part="chart" id="chart-part">
     <div class="block-head"><h2 id="t-lvl">수위는 이렇게 움직여요</h2><p class="sub">검은 선은 지난 24시간 실제 수위예요. 오른쪽은 앞으로 12시간이에요.</p></div>
     <figure class="chart" id="lvl"></figure>
-    <div class="legend2"><span><i style="background:var(--text3)"></i>지금처럼 두면</span><span><i style="background:var(--blue)"></i>계산대로 내보내면</span><span><i style="background:var(--text)"></i>실제</span></div>
+    <div class="legend2"><span><i style="background:var(--text3)"></i>지금처럼 두면</span><span><i style="background:var(--blue)"></i>계산대로 내보내면</span><span><i class="dot"></i>실제</span></div>
     <p class="note" id="actual"></p>
   </section>
 
   <section class="block" aria-labelledby="t-how">
     <div class="block-head"><h2 id="t-how">이렇게 계산했어요</h2></div>
     <ol class="steps">
-      <li><b>앞으로 들어올 물</b><p>그 시점까지의 비·유입량으로 3·6·9·12시간 뒤 유입량을 예측했어요. 그 해 자료는 보지 않고 다른 해로만 배운 모델이에요.</p></li>
+      <li><b>앞으로 들어올 물</b><p>그 시점까지의 비·유입량으로 3·6·9·12시간 뒤 유입량을 예측했어요. 그 해 자료는 보지 않고 다른 해로만 배운 모델이에요. 다만 물이 갑자기 불어날 때는 적게 맞혀요. 여섯 번의 큰비에서 들어오는 물이 지금의 두 배 넘게 불어난 때만 보면, 예측은 실제의 68%(3시간 뒤)에서 45%(12시간 뒤)에 그쳤어요.</p></li>
       <li><b>쌓일 물 → 수위</b><p>들어올 물에서 내보낼 물을 빼 쌓이는 양을 구하고, 실측 자료로 만든 “저수량 ↔ 수위” 곡선으로 수위를 구했어요.</p></li>
-      <li><b>내보낼 물</b><p>12시간 뒤 관리 기준 수위(장마철엔 홍수기제한수위, 그 밖엔 상시만수위)까지 낮추면서, 그 사이 계획홍수위를 넘지 않는 가장 작은 양을 12시간 동안 똑같이 내보낸다고 계산했어요.</p></li>
+      <li><b>내보낼 물</b><p>12시간 뒤 기준 수위(장마철엔 홍수기제한수위, 그 밖엔 상시만수위)까지 낮추면서, 그 사이 계획홍수위를 넘지 않는 가장 작은 양을 12시간 동안 똑같이 내보낸다고 계산했어요.</p></li>
     </ol>
     <p class="note">교육용 단순 계산이에요. 실제 방류는 하류 하천 상황, 수문 능력, 사전 통보 같은 운영 규정을 함께 따져 정해요. 이 화면은 실제 운영 판단을 평가하지 않아요.</p>
   </section>
