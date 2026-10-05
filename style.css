@@ -315,3 +315,5 @@ h1 em.warn-text { color: var(--warn); }
   .anim .rain { display: none; }
   .anim .lvg, .tank .peak { transition-duration: 0ms; }
 }
+
+a.btn { text-decoration: none; }
