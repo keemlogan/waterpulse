@@ -95,25 +95,32 @@ function assess(dam, series, i, ts) {
   const toPlan = firstOver(dam.plan, false), toGuide = firstOver(guide.level, true);
   const status = toPlan != null ? "danger" : toGuide != null ? "warn" : "ok";
 
-  // 12시간 뒤 기준 수위까지 낮추고, 그 사이 계획홍수위를 넘지 않는 가장 작은 일정 방류량.
-  // 이미 계획홍수위 위라면 "넘지 않기"는 지킬 수 없으니, 지금 높이보다 더 오르지 않는 것으로 바꾼다
+  // 답은 두 숫자로 나눈다.
+  // ① 안전선(큰 답): 12시간 동안 똑같이 내보낼 때 계획홍수위를 한 번도 넘지 않는 가장 작은 양.
+  //    이미 계획홍수위 위라면 "넘지 않기"는 지킬 수 없으니, 지금 높이보다 더 오르지 않는 것으로 바꾼다.
+  // ② 비우기(보조): 다음 비를 받을 자리를 위해 24시간에 걸쳐 기준 수위까지 낮추는 양. 13~24시간 유입은
+  //    12시간 뒤 예측값이 그대로 간다고 본다. 처음엔 이걸 "12시간 안에"로 큰 답에 섞어서, 실제 운영보다
+  //    가운데 값 1.8배를 내보내라고 했다(2026-10-06 수정).
   let cum = 0, qPeak = 0;
   const Vcap = Math.max(storageOf(dam, dam.plan - off), S0);
   inflow.forEach((I, k) => {
     cum += I * M3_PER_HOUR;
     qPeak = Math.max(qPeak, (S0 + cum - Vcap) / ((k + 1) * M3_PER_HOUR));
   });
-  const need = Math.max(0, (S0 + cum - storageOf(dam, guide.level - off)) / (HORIZON * M3_PER_HOUR), qPeak);
-  // 곡선에 평평한 구간이 있으면 수위로는 "기준 아래"인데 저수량으로는 조금 넘는 일이 생긴다 → 정상이면 지금 양으로 충분
-  const q = status === "ok" ? Math.min(need, O0) : need;
+  // 위험이 아니면 지금 양으로 계획홍수위 아래 → 안전선은 지금 양
+  const q = status === "danger" ? qPeak : Math.min(qPeak, O0);
   const out = Math.max(q, O0);
+  const DRAIN_H = 24;
+  const cum24 = cum + inflow[HORIZON - 1] * (DRAIN_H - HORIZON) * M3_PER_HOUR;
+  const qDrain = Math.max(0, (S0 + cum24 - storageOf(dam, guide.level - off)) / (DRAIN_H * M3_PER_HOUR));
+  const drain = qDrain > out ? { q: qDrain, hours: DRAIN_H, overCapacity: qDrain > dam.omax } : null;   // 안전선보다 더 내보내야 비울 수 있을 때만
   // 되감기라서 알 수 있는 "그 뒤 12시간에 실제로 일어난 일"
   const actualL = series.L.slice(i + 1, i + 1 + HORIZON);
   const actualO = series.O.slice(i + 1, i + 1 + HORIZON).filter((v) => v != null);
   const seen = actualL.filter((v) => v != null);
   return {
     L0, O0, guide, inflow, keep, keepMax: Math.max(...keep), plan: levelPath(dam, S0, inflow, out, off), status, toPlan, toGuide,
-    q, enough: q <= O0, overCapacity: q > dam.omax, totalTon: out * HORIZON * 3600,
+    q, enough: q <= O0, overCapacity: q > dam.omax, totalTon: out * HORIZON * 3600, drain,
     actualL, actualOavg: actualO.length ? actualO.reduce((a, b) => a + b, 0) / actualO.length : null,
     actualMax: seen.length ? Math.max(...seen) : null, complete: seen.length === HORIZON,
   };

@@ -59,20 +59,18 @@ function renderAnswer(dam, a) {
   const tone = a.status === "danger" ? "bad" : a.status === "warn" ? "warn" : "";
   let title, sub;
   if (!a.enough) {
-    title = `지금부터 12시간 동안 1초에 <em class="${tone}">${perSec(a.q)}씩</em> 내보내야 해요`;
-    const why = a.toPlan === 0 ? "이미 계획홍수위를 넘었어요."
-      : a.toPlan != null ? `지금처럼 1초에 ${perSec(a.O0)}만 내보내면 ${a.toPlan}시간 뒤 계획홍수위(${n(dam.plan, 1)}m)를 넘어요.`
-      : a.toGuide === 0 ? `이미 ${g} 위예요.`
-      : `지금처럼 1초에 ${perSec(a.O0)}만 내보내면 ${a.toGuide}시간 뒤 ${g}를 넘어요.`;
+    title = `계획홍수위를 넘지 않으려면 1초에 <em class="${tone}">최소 ${perSec(a.q)}씩</em> 내보내야 해요`;
+    const why = a.toPlan === 0 ? "이미 계획홍수위를 넘었어요. 더 오르지 않게 하려면 이만큼이 필요해요."
+      : `지금처럼 1초에 ${perSec(a.O0)}만 내보내면 ${a.toPlan}시간 뒤 계획홍수위(${n(dam.plan, 1)}m)를 넘어요.`;
     sub = `${why} 지금보다 1초에 ${perSec(a.q - a.O0)}씩 더, 12시간 동안 모두 ${tons(a.totalTon)}이에요.`;
   } else if (a.status === "ok") {
     title = "지금 내보내는 양이면 <em>충분해요</em>";
     sub = `지금처럼 1초에 ${perSec(a.O0)}씩 내보내면 12시간 동안 최고 ${n(a.keepMax, 2)}m로, ${g} 아래예요.`;
   } else {
-    title = `지금 내보내는 양을 <em class="${tone}">줄이지 마세요</em>`;
-    const now = a.toPlan === 0 ? "이미 계획홍수위 위예요." : a.toGuide === 0 ? `이미 ${g} 위예요.`
-      : `${a.toGuide}시간 뒤 잠깐 ${g}를 넘어 최고 ${n(a.keepMax, 2)}m까지 올라요.`;
-    sub = `${now} 지금처럼 1초에 ${perSec(a.O0)}씩 계속 내보내면 12시간 뒤엔 ${a.guide.name} 아래로 내려와요.`;
+    title = `지금 양이면 계획홍수위는 <em class="${tone}">넘지 않아요</em>`;
+    const now = a.toPlan === 0 ? "이미 계획홍수위 위예요." : a.toGuide === 0 ? `다만 이미 ${g} 위예요.`
+      : `다만 ${a.toGuide}시간 뒤 ${g}를 넘어 최고 ${n(a.keepMax, 2)}m까지 올라요.`;
+    sub = `${now} 지금처럼 1초에 ${perSec(a.O0)}씩 내보내면 12시간 동안 계획홍수위(${n(dam.plan, 1)}m) 아래예요. 줄이지는 마세요.`;
   }
   $("#answer-title").innerHTML = title;
   $("#answer-sub").textContent = sub;
@@ -80,12 +78,15 @@ function renderAnswer(dam, a) {
     a.overCapacity && dam.kind === "댐"
       ? `<p class="warnline">모은 기록에서 이 댐이 가장 많이 내보낸 양(1초에 ${n(dam.omax)}톤)보다 많아요. 한 번에 이만큼 내보내기는 어려울 수 있어서, 실제 운영이라면 더 일찍부터 나눠 내보내는 방법을 따졌을 거예요.</p>`
       : "",
+    a.drain
+      ? `<p class="drainline"><b>다음 비까지 생각하면</b> · 24시간에 걸쳐 ${esc(g)}까지 낮추려면 1초에 ${perSec(a.drain.q)}씩 내보내야 해요.${a.drain.overCapacity ? ` 이 댐이 기록상 가장 많이 내보낸 양(1초에 ${n(dam.omax)}톤)보다 많아서, 하루 안에 다 비우기는 어려워요.` : ""} 위의 답은 넘치지 않기 위한 최소한이에요.</p>`
+      : "",
     a.status !== "ok" ? `<p class="fine">예측은 물이 갑자기 불어날 때 실제보다 적게 나오는 편이라, 실제로 필요했던 양은 이보다 많았을 수 있어요.</p>` : "",
   ].join("");
   $("#kpis").innerHTML = `
     <div><b>${n(a.L0, 2)}m</b><span>지금 수위</span></div>
     <div><b class="${a.toPlan != null ? "bad" : ""}">${n(a.keepMax, 2)}m</b><span>지금처럼 두면 12시간 안 최고 · ${esc(whenText(a))}</span></div>
-    <div><b>${tons(a.totalTon)}</b><span>계산대로 12시간 동안 내보낼 양</span></div>`;
+    <div><b>${tons(a.totalTon)}</b><span>넘지 않게 12시간 동안 내보낼 양</span></div>`;
 }
 
 /* 세로 눈금은 시나리오·댐마다 한 번 정해 고정한다 → 시간을 옮기면 같은 그림 안에서 물만 움직인다 */

@@ -292,6 +292,7 @@ h1 em.warn-text { color: var(--warn); }
 /* ── 리뷰 반영(2차) ── */
 .hero .fine { margin: 10px 0 0; font-size: 13px; color: var(--text3); }
 .answer h2 em.warn { color: var(--warn); }
+.answer .drainline { margin-top: 12px; padding: 12px 14px; border-radius: 12px; background: var(--blue-weak); color: var(--text); font-size: 14px; }
 .answer p.fine { font-size: 13px; color: var(--text3); }
 .scrub input[type=range] { height: 44px; }
 .row:disabled { opacity: 0.45; }
