@@ -131,6 +131,60 @@ function assessScenario(meta, data, i) {
       || (x.a?.toPlan ?? 99) - (y.a?.toPlan ?? 99) || (x.a?.toGuide ?? 99) - (y.a?.toGuide ?? 99));
 }
 
+/* 큰비 하나 채점. "위험"은 "방류를 그대로 두면"이라는 가정이라, 운영자가 방류를 늘려 막으면 맞는 경고도
+   "안 넘침"이 된다. 그래서 운영자 개입에 흔들리지 않는 값을 함께 잰다.
+   - eng: 실제 유입·실제 방류를 넣은 12시간 최고 수위 오차(m) → 계산(물 수지·곡선)만 시험
+   - fc : 예측 유입 + 실제 방류 → 개입은 지우고 예측까지 시험 (fcBig: 그 사이 유입이 2배+50㎥/s 넘게 불어난 때)
+   - 선행 시간: 운영자가 처음 방류를 크게 늘린 시각(창 시작 방류의 1.2배+10㎥/s 이상) 전에
+     경계·위험이 새로 켜졌나(창 시작부터 켜져 있던 댐은 "새로"가 아니라 뺀다)
+   - tp·fp·fn: 실제로 계획홍수위에 닿았나(참고). 이미 넘어 있던 시간·자료가 빈 시간은 뺀다 */
+function scoreScenario(meta, data) {
+  const c = { tp: 0, fp: 0, fn: 0, tn: 0, already: 0, gap: 0, danger: 0, dangerActed: 0, ok: 0, okActed: 0,
+    fpAdj: 0, fpDam: 0, fpDamActed: 0, eng: [0, 0], fc: [0, 0], fcBig: [0, 0],
+    ops: 0, opsWarned: 0, opsDanger: 0, opsSilent: 0, leads: [], leadsDanger: [] };
+  const err = (acc, v) => { acc[0] += Math.abs(v); acc[1]++; };
+  const n0 = data.ts.length - HORIZON;
+  for (const code of Object.keys(data.dams)) {
+    const dam = meta[code], ser = data.dams[code];
+    if (!judgeable(dam)) continue;
+    const st0 = [];                                     // 시각마다 판정(선행 시간용)
+    for (let i = 0; i < n0; i++) {
+      const a = assess(dam, ser, i, data.ts[i]);
+      st0.push(a && a.L0 < dam.plan ? a.status : null);
+      if (!a || !a.complete) { c.gap++; continue; }
+      if (a.L0 >= dam.plan) { c.already++; continue; }
+      const real = a.actualMax >= dam.plan, acted = real || (a.actualOavg != null && a.actualOavg >= a.O0 * 1.2 + 10);
+      c[a.status === "danger" ? (real ? "tp" : "fp") : real ? "fn" : "tn"]++;
+      if (a.status === "danger" && !real) {
+        if (dam.kind === "조정지") c.fpAdj++;
+        else { c.fpDam++; if (acted) c.fpDamActed++; }
+      }
+      if (a.status !== "warn") { c[a.status]++; if (acted) c[`${a.status}Acted`]++; }
+      const fut = (arr) => arr.slice(i + 1, i + 1 + HORIZON);
+      const O = fut(ser.O), I = fut(ser.I);
+      if (O.length < HORIZON || O.some((v) => v == null) || I.some((v) => v == null)) continue;
+      const off = a.L0 - levelOf(dam, ser.S[i]);
+      const peak = (inflow) => { let S = ser.S[i], m = -Infinity; inflow.forEach((v, k) => { S += (v - O[k]) * M3_PER_HOUR; m = Math.max(m, levelOf(dam, S) + off); }); return m; };
+      err(c.eng, a.actualMax - peak(I));
+      const e = a.actualMax - peak(a.inflow);
+      err(c.fc, e);
+      if (Math.max(...I) >= 2 * Math.max(ser.I[i] ?? 0, 1) && Math.max(...I) >= (ser.I[i] ?? 0) + 50) err(c.fcBig, e);
+    }
+    const O0 = ser.O[0];
+    if (O0 == null) continue;
+    const tOp = ser.O.findIndex((v, t) => t > 0 && t < n0 && v != null && v >= O0 * 1.2 + 10);
+    if (tOp < 0) continue;
+    c.ops++;
+    if (st0[0] != null && st0[0] !== "ok") continue;     // 처음부터 경계·위험이던 댐은 "먼저 알렸나"를 셀 수 없다
+    const first = (ok) => { for (let i = 1; i <= tOp && i < st0.length; i++) if (ok(st0[i])) return i; return null; };
+    const w = first((s) => s === "warn" || s === "danger"), d = first((s) => s === "danger");
+    if (w != null) { c.opsWarned++; c.leads.push(tOp - w); } else c.opsSilent++;
+    if (d != null) { c.opsDanger++; c.leadsDanger.push(tOp - d); }
+  }
+  return c;
+}
+const median = (a) => { if (!a.length) return null; const s = [...a].sort((x, y) => x - y), h = s.length >> 1; return s.length % 2 ? s[h] : (s[h - 1] + s[h]) / 2; };
+
 /* "2시간 뒤 계획홍수위" 같은 한 줄 */
 function whenText(a) {
   if (a.toPlan != null) return a.toPlan === 0 ? "이미 계획홍수위 위" : `${a.toPlan}시간 뒤 계획홍수위`;

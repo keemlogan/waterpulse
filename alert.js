@@ -87,30 +87,10 @@ function renderRivers() {
   });
 }
 
-/* ── 이 판정, 맞았을까: 그 시각에 "위험"이라고 했을 때 12시간 안에 실제로 계획홍수위에 닿았나 ──
-   한 댐을 한 시간마다 한 번 센다. 이미 넘어 있던 시간은 맞히는 게 아니라서 빼고, 자료가 빈 시간도 뺀다.
-   acted: 실제로 넘쳤거나, 그 뒤 12시간 평균 방류를 지금보다 20%+10톤 넘게 늘린 때(운영자가 손을 쓴 때) */
-function scoreScenario(meta, data) {
-  const c = { tp: 0, fp: 0, fn: 0, tn: 0, already: 0, gap: 0, danger: 0, dangerActed: 0, ok: 0, okActed: 0 };
-  for (let i = 0; i + HORIZON < data.ts.length; i++) {
-    for (const code of Object.keys(data.dams)) {
-      const dam = meta[code];
-      if (!judgeable(dam)) continue;
-      const a = assess(dam, data.dams[code], i, data.ts[i]);
-      if (!a || !a.complete) c.gap++;
-      else if (a.L0 >= dam.plan) c.already++;
-      else {
-        const real = a.actualMax >= dam.plan, acted = real || (a.actualOavg != null && a.actualOavg >= a.O0 * 1.2 + 10);
-        c[a.status === "danger" ? (real ? "tp" : "fp") : real ? "fn" : "tn"]++;
-        if (a.status !== "warn") {
-          c[a.status]++;
-          if (acted) c[`${a.status}Acted`]++;
-        }
-      }
-    }
-  }
-  return c;
-}
+/* ── 이 판정, 맞았을까 ──
+   "위험"은 "방류를 그대로 두면"이라는 가정이라, 실제로 넘쳤는지만 세면 운영자가 막은 경우가 틀림이 된다.
+   그래서 운영자 개입에 흔들리지 않는 값(계산 오차·예측 포함 오차·선행 시간)을 먼저 보여 주고, 넘침 채점은 참고로 둔다.
+   계산은 common.js의 scoreScenario 한 곳에서만 한다(보고서 report_dash/validity.js도 같은 함수를 쓴다) */
 const idle = () => new Promise((ok) => setTimeout(ok, 0));   // 시나리오 사이에 한 번씩 화면에 양보한다
 const scoreOf = (id) => (scores[id] ||= getJSON(`data/scn_${id}.json`).then(async (d) => {
   await idle();
@@ -120,17 +100,29 @@ const scoreOf = (id) => (scores[id] ||= getJSON(`data/scn_${id}.json`).then(asyn
   throw e;
 }));
 const pct = (a, b) => (b ? `${n((a / b) * 100)}%` : "–");
+const cm = (acc) => (acc[1] ? `${n((acc[0] / acc[1]) * 100)}cm` : "–");
+const hrs = (v) => `${n(v, Number.isInteger(v) ? 0 : 1)}시간`;
+const leadText = (c) => (c.leads.length ? `가운데 ${hrs(median(c.leads))} 앞` : "먼저 알린 때 없음");
+function addScore(t, c) {
+  for (const [k, v] of Object.entries(c)) {
+    if (k.startsWith("leads")) t[k] = (t[k] || []).concat(v);
+    else if (Array.isArray(v)) t[k] = (t[k] || [0, 0]).map((x, j) => x + v[j]);
+    else t[k] = (t[k] || 0) + v;
+  }
+  return t;
+}
 
 function renderCheck() {
   const id = st.scn.id;
   scoreOf(id).then((c) => {
     if (st.scn.id !== id) return;
-    $("#check-sub").textContent = `${st.scn.title}의 모든 시각으로 되감아 판정하고, 그 뒤 12시간 실제 수위와 맞춰 봤어요.`;
+    const judged = c.opsWarned + c.opsSilent;
+    $("#check-sub").textContent = `${st.scn.title}의 모든 시각으로 되감아 봤어요. “위험”은 지금 방류를 그대로 둔다는 가정이라, 실제로 넘쳤는지만 보면 운영자가 방류를 늘려 막은 경우가 틀림으로 세어져요. 그래서 운영자 손길에 흔들리지 않는 값으로 채점했어요.`;
     $("#check").innerHTML = `
-      <div><b>${pct(c.tp, c.tp + c.fp)}</b><span>“위험”이라고 한 ${n(c.tp + c.fp)}번 중 실제로 닿은 비율</span></div>
-      <div><b>${pct(c.tp, c.tp + c.fn)}</b><span>실제로 닿은 ${n(c.tp + c.fn)}번 중 미리 알린 비율</span></div>
-      <div><b>${n(c.fn)}번</b><span>알림 없이 닿은 때</span></div>`;
-    $("#check-note").textContent = `한 댐을 한 시간마다 한 번씩 셌어요. 이미 계획홍수위 위였던 ${n(c.already)}번과 자료가 빈 ${n(c.gap)}번은 빼고 셌어요.`;
+      <div><b>${cm(c.eng)}</b><span>실제로 들어오고 나간 물을 넣었을 때 12시간 최고 수위 오차 (계산만 시험)</span></div>
+      <div><b>${cm(c.fc)}</b><span>방류는 실제, 유입은 예측일 때 오차 · 물이 불어날 때 ${cm(c.fcBig)}</span></div>
+      <div><b>${n(c.opsWarned)}/${n(judged)}번</b><span>운영자가 방류를 크게 늘리기 전에 경계·위험을 낸 횟수 · ${leadText(c)}</span></div>`;
+    $("#check-note").textContent = `참고로 실제로 계획홍수위에 닿았는지로 세면, “위험” ${n(c.tp + c.fp)}번 중 ${pct(c.tp, c.tp + c.fp)}가 닿았고 실제로 닿은 ${n(c.tp + c.fn)}번 중 ${pct(c.tp, c.tp + c.fn)}를 미리 알렸어요. 한 댐을 한 시간마다 한 번씩 셌고, 이미 계획홍수위 위였던 ${n(c.already)}번과 자료가 빈 ${n(c.gap)}번은 뺐어요. “크게 늘림” = 정점 48시간 전 방류의 1.2배+10톤 이상, 처음부터 경계·위험이던 ${n(c.ops - judged)}곳은 뺐어요.`;
   }).catch((e) => {
     $("#check-note").textContent = "채점에 필요한 자료를 불러오지 못했어요.";
     console.error(e);
@@ -159,13 +151,13 @@ function renderCheckAll() {
       return rows;
     })
     .then((rows) => {
-      const sum = rows.reduce((t, { c }) => Object.fromEntries(Object.keys(t).map((k) => [k, t[k] + c[k]])), { tp: 0, fp: 0, fn: 0, danger: 0, dangerActed: 0, ok: 0, okActed: 0 });
-      const tr = (name, c, cls = "") => `<tr class="${cls}"><th scope="row">${esc(name)}</th><td>${n(c.tp + c.fp)}</td><td>${pct(c.tp, c.tp + c.fp)}</td><td>${n(c.tp + c.fn)}</td><td>${pct(c.tp, c.tp + c.fn)}</td></tr>`;
+      const sum = rows.reduce((t, { c }) => addScore(t, c), {});
+      const tr = (name, c, cls = "") => `<tr class="${cls}"><th scope="row">${esc(name)}</th><td>${cm(c.eng)}</td><td>${cm(c.fc)}</td><td>${n(c.opsWarned)}/${n(c.opsWarned + c.opsSilent)}</td><td>${c.leads.length ? hrs(median(c.leads)) : "–"}</td><td>${pct(c.tp, c.tp + c.fp)}</td></tr>`;
       $("#check-all").innerHTML = `<table class="tbl">
-        <caption>여섯 번의 큰비 모두 (댐×시간)</caption>
-        <thead><tr><th scope="col">큰비</th><th scope="col">“위험”</th><th scope="col">맞음</th><th scope="col">실제 닿음</th><th scope="col">미리 알림</th></tr></thead>
+        <caption>여섯 번의 큰비 모두</caption>
+        <thead><tr><th scope="col">큰비</th><th scope="col">계산 오차</th><th scope="col">예측 포함</th><th scope="col">먼저 알림</th><th scope="col">얼마나 먼저</th><th scope="col">참고: “위험” → 닿음</th></tr></thead>
         <tbody>${rows.map(({ s, c }) => tr(s.title.replace(" 큰비", ""), c)).join("")}${tr("모두", sum, "total")}</tbody></table>
-        <p class="note">${actedNote(sum)}</p>`;
+        <p class="note">${readNote(sum)}</p>`;
     })
     .catch((e) => {
       $("#check-all").innerHTML = `<p class="note">채점에 필요한 자료를 불러오지 못했어요.</p>`;
@@ -173,14 +165,16 @@ function renderCheckAll() {
     });
 }
 
-/* 넘친 것만이 아니라 "운영자가 손을 쓴 때"까지 넓혀 비교. 숫자가 말하는 만큼만 말한다 */
-function actedNote(c) {
-  const d = c.danger ? c.dangerActed / c.danger : null, o = c.ok ? c.okActed / c.ok : null;
-  const base = `실제로 계획홍수위에 닿았거나 그 뒤 12시간 평균 방류를 지금보다 20%+10톤 넘게 늘린 때까지 넓혀 보면, “위험”이었던 때는 <b>${pct(c.dangerActed, c.danger)}</b>, “정상”이었던 때는 ${pct(c.okActed, c.ok)}였어요.`;
-  if (d == null || o == null) return base;
-  if (d >= o * 2) return `${base} “위험” 판정이 운영자가 방류를 크게 늘린 때와 꽤 겹친다는 뜻이에요. 다만 대신 쓴 기준이라 참고로만 봐 주세요.`;
-  if (d > o) return `${base} 차이가 크지 않아, “위험” 판정만으로 손쓸 때를 가려내기엔 부족해요.`;
-  return `${base} “위험” 판정이 실제 운영과 거의 맞지 않았어요.`;
+/* 숫자가 말하는 만큼만: 오차가 어디서 오나, 헛알림은 왜 생기나 */
+function readNote(c) {
+  const engE = c.eng[1] ? c.eng[0] / c.eng[1] : null, fcE = c.fc[1] ? c.fc[0] / c.fc[1] : null;
+  const where = engE != null && fcE != null && fcE > engE * 2
+    ? `계산 자체의 오차는 ${cm(c.eng)}로 작고, 예측을 넣으면 ${cm(c.fc)}로 커져요. 오차는 거의 다 들어올 물 예측에서 나와요.`
+    : `계산 오차 ${cm(c.eng)}, 예측을 넣은 오차 ${cm(c.fc)}예요.`;
+  const fp = c.fpAdj + c.fpDam;
+  const why = fp ? ` 실제로 닿지 않은 “위험” ${n(fp)}번 중 ${n(c.fpAdj)}번은 조정지였어요(작은 저수지라 예측이 조금만 틀려도 계산 수위가 크게 흔들려요). 댐에서 나온 ${n(c.fpDam)}번 중 ${n(c.fpDamActed)}번은 그 뒤 운영자가 방류를 늘렸어요 — 막았기 때문에 안 넘쳤을 수 있어요.` : "";
+  const silent = c.opsSilent ? ` 운영자가 방류를 크게 늘린 때 중 ${n(c.opsSilent)}번은 우리 판정이 먼저 알리지 못했어요.` : "";
+  return where + why + silent;
 }
 
 /* 댐 하나 자세히 */
