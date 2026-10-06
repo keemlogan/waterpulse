@@ -194,13 +194,13 @@ function sheetHTML(d) {
     ${ev ? `<div class="sec ev-sec"><h4>큰비가 왔을 때</h4><p class="sub">${esc(ev.label)}</p>
       <figure class="chart ev-chart"></figure>
       <p class="sub">비가 가장 셌던 ${esc(ev.ts[ev.rain_peak_i].slice(5))} → 유입이 가장 많았던 ${esc(ev.ts[ev.inflow_peak_i].slice(5))}, ${n(ev.lag_h)}시간 차이</p></div>` : ""}
-    ${hs.length ? `<div class="sec"><h4>몇 시간 뒤를 맞힐 수 있을까요</h4><p class="sub">2024–2025년으로 시험했어요. “지금 양 그대로”라고 찍을 때보다 오차가 몇 % 줄었는지예요.</p><div class="fc">${fcRows}</div>
-      ${fcHigh ? `<p class="sub fc-sub">큰물(상위 5%) 때만 보면</p><div class="fc">${fcHigh}</div>` : ""}
+    ${hs.length ? `<div class="sec"><h4>몇 시간 뒤를 맞힐 수 있을까요</h4><p class="sub">2024–2025년으로 시험했어요. “지금 양이 그대로 간다”고 찍을 때보다 덜 틀린 정도예요. 20%면 찍기가 100만큼 틀릴 때 모델은 80만큼만 틀렸다는 뜻이에요.</p><div class="fc">${fcRows}</div>
+      ${fcHigh ? `<p class="sub fc-sub">홍수 때만 보면 (이 댐에 물이 가장 많이 들어오는 상위 5% 시간)</p><div class="fc">${fcHigh}</div>` : ""}
       ${allWorse ? `<p class="sub fc-sub">이 댐은 아직 “그대로 찍기”보다 나은 예측을 못 했어요. 원인은 아직 확인하지 못했고, 아래 데이터 상태를 함께 봐 주세요.</p>` : ""}</div>` : ""}
     <div class="sec"><h4>데이터 상태</h4><dl class="kv">
       <dt>2020–2025 시간 자료</dt><dd>${n(q.rows || 0)}줄 (${n(q.coverage || 0, 1)}%)</dd>
       <dt>유입량 0 이하</dt><dd>${n(q.inflow_le0_pct || 0, 1)}%</dd>
-      ${d.lag ? `<dt>큰비 사건</dt><dd>${n(d.lag.events)}번</dd><dt>다른 방법(교차상관)으로 잰 값</dt><dd>${d.lag.xcorr_h != null ? `${n(d.lag.xcorr_h)}시간` : "–"}</dd>` : ""}
+      ${d.lag ? `<dt>큰비 사건</dt><dd>${n(d.lag.events)}번</dd><dt>다른 방법으로 잰 값 (비 그래프를 몇 시간 밀면 유입과 가장 닮는지)</dt><dd>${d.lag.xcorr_h != null ? `${n(d.lag.xcorr_h)}시간` : "–"}</dd>` : ""}
       ${d.basin_km2 ? `<dt>유역 넓이</dt><dd>${n(d.basin_km2)}㎢</dd>` : ""}
       ${d.anomaly ? `<dt>예측이 크게 빗나간 때 (2024–2025)</dt><dd>${n(d.anomaly.episodes)}번 · ${n(d.anomaly.flag_hours)}시간</dd>` : ""}
     </dl></div>`;
@@ -299,7 +299,7 @@ function renderUpstream() {
   $("#up-note").textContent = D.upstream_note;
 }
 
-/* 20년 큰물 지수 */
+/* 20년 홍수 크기 (그해 최대 유입 ÷ 보통 해) */
 function renderTrend() {
   const t = D.trend;
   $("#trend-sub").textContent = t.sub;
