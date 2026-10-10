@@ -1,179 +1,166 @@
-import { GROUPS, ITEMS, FLOW, SCHEDULE, UPDATED, MIDTERM, FINAL, AFTER } from "./data.js";
+import { UPDATED, MIDTERM, FINAL, PHASES, CURRENT, HERO, NOW, RECENT, TASKS, GUIDES, REQS, DOCS, LOG, ALIASES } from "./data.js";
 
 const view = document.getElementById("view");
-const STATUS = { done: "끝남", doing: "진행 중", todo: "할 일", decide: "팀 결정 필요" };
-const KIND = { pdf: "문서", app: "화면", code: "코드", ext: "외부 링크" };
+const ALL = [...TASKS, ...GUIDES];
+const byId = Object.fromEntries(ALL.map((t) => [t.id, t]));
+const STATUS = { done: "끝남", doing: "진행 중", todo: "할 일", decide: "결정 필요", wait: "대기" };
+let status = null;   // status.json (수집 현황)
 
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const md = (d) => (d ? `${Number(d.slice(5, 7))}/${Number(d.slice(8, 10))}` : "");
-const day = (d) => new Date(d + "T00:00:00+09:00");
+const WD = ["일", "월", "화", "수", "목", "금", "토"];
+const mdw = (d) => `${md(d)}(${WD[new Date(d + "T12:00:00").getDay()]})`;
 const today = () => { const n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); };
-const dday = (iso) => Math.round((day(iso.slice(0, 10)) - today()) / 86400000);
-const badge = (st) => `<span class="st ${st}">${STATUS[st]}</span>`;
+const daysTo = (d) => Math.round((new Date(d + "T00:00:00") - today()) / 86400000);
+const dday = (d) => { const n = daysTo(d); return n > 0 ? `D-${n}` : n === 0 ? "D-DAY" : `D+${-n}`; };
+const chip = (st) => `<span class="chip ${st}">${STATUS[st]}</span>`;
+const num = (n) => n.toLocaleString("ko-KR");
+const phaseOf = (t) => PHASES.find((p) => p.id === t.phase);
+const tasksOf = (pid) => TASKS.filter((t) => t.phase === pid);
+const arrow = `<svg class="arr" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
-function masthead() {
-  const count = (st) => ITEMS.filter((i) => i.status === st).length;
-  const dm = dday(MIDTERM), df = dday(FINAL);
-  document.getElementById("facts").innerHTML =
-    `<span>중간발표까지 <b>${dm > 0 ? `D-${dm}` : dm === 0 ? "D-DAY" : "끝남"}</b></span>` +
-    `<span>최종발표까지 <b>D-${Math.max(df, 0)}</b></span>` +
-    `<span>할 일 <b>${count("todo")}</b> · 진행 중 <b>${count("doing")}</b> · 팀 결정 <b>${count("decide")}</b> · 끝남 <b>${count("done")}</b></span>` +
-    `<span class="upd">내용 기준일 ${UPDATED}</span>`;
+function phaseState(pid) {
+  const ts = tasksOf(pid);
+  const done = ts.filter((t) => t.status === "done").length;
+  const doing = ts.filter((t) => t.status === "doing").length;
+  const pct = ((done + doing * 0.5) / ts.length) * 100;   // 진행 중은 반만 친다
+  const state = done === ts.length ? "done" : ts.some((t) => t.status === "doing" || t.status === "done") ? "doing" : "wait";
+  return { ts, done, doing, pct, state };
 }
 
-// 전체 구조 그림. 상자 = 구성요소, 화살표 라벨 = 옮기는 도구.
-function archFigure() {
-  const box = (t, s, cls = "") => `<div class="ab ${cls}"><b>${t}</b>${s ? `<span>${s}</span>` : ""}</div>`;
-  return `
-  <figure class="arch" aria-label="WaterPulse 전체 구조">
-    <div class="arow src">
-      <p class="alabel">데이터 출처 · 공공 API</p>
-      <div class="agrid four">
-        ${box("수문 운영 정보", "댐 수위·유입·방류·저수량 · 15099110")}
-        ${box("우량수위 관측소", "상류 비·강 수위·유량 · 15099115")}
-        ${box("수문 제원 · 댐코드", "계획홍수위·유역 넓이 · 15099107/105")}
-        ${box("기상청 ASOS", "강수·기온·습도·적설 · 15057210")}
-      </div>
-    </div>
-    <div class="aarrow"><span>Python 수집기 · 페이지 나눠 받기 · 재시도 · 호출 기록</span></div>
-    <div class="arow">
-      <div class="agrid two">
-        ${box("spool 폴더", "받은 그대로 JSON Lines", "file")}
-        ${box("MySQL 기준표", "댐 좌표 · 관측소 연결 · ASOS 연결 · 수위 곡선", "db")}
-      </div>
-    </div>
-    <div class="agrid two arrows"><div class="aarrow"><span>Flume (spooldir → HDFS)</span></div><div class="aarrow"><span>Sqoop import</span></div></div>
-    <div class="arow hadoop">
-      <p class="alabel">빅데이터 관리 · 하둡 (수업 실습 VM)</p>
-      <div class="shelves">
-        ${box("① 원본 선반", "/etl/waterpulse/raw · Hive EXTERNAL 표, 전부 STRING", "shelf")}
-        <i class="sa">Spark 정제</i>
-        ${box("② 정리 선반", "/data/waterpulse/clean · Parquet · 연도 파티션", "shelf")}
-        <i class="sa">Spark 특징·분석 + Python 모델</i>
-        ${box("③ 결과 선반", "/data/waterpulse/mart · 예측 · 방류 · 경보 · 품질표", "shelf")}
-      </div>
-      <p class="atools">HDFS 저장 · YARN 자원 배분 · Hive 표 정의 · Impala 빠른 조회 · Hue 화면</p>
-    </div>
-    <div class="aarrow"><span>Sqoop export</span></div>
-    <div class="arow">
-      <div class="agrid two">
-        ${box("MySQL 결과 DB", "forecast · release · alert · lag_events · quality", "db")}
-        ${box("웹 서버", "Flask · 결과 표를 JSON으로", "srv")}
-      </div>
-    </div>
-    <div class="aarrow"><span>브라우저</span></div>
-    <div class="arow web">
-      <div class="agrid two">
-        ${box("방류 계산기", "댐 운영자 · 지금 몇 ㎥/s 내보내야 하나", "ui")}
-        ${box("재난 상황판", "재난 담당자 · 어느 댐이 위험해지나", "ui")}
-      </div>
-    </div>
-  </figure>`;
+function setTab(name) {
+  document.querySelectorAll(".tabs a").forEach((a) => a.toggleAttribute("aria-current", a.dataset.tab === name));
 }
 
-function flowStrip() {
-  return `<ol class="flow">${FLOW.map((f, k) => {
-    const g = GROUPS.find((x) => x.id === f.group);
-    const its = ITEMS.filter((i) => i.group === f.group);
-    const done = its.filter((i) => i.status === "done").length;
-    return `<li><a href="#${f.group}">
-      <span class="fn">${g.step}</span>
-      <b>${esc(f.title)}</b>
-      <span class="ft">${esc(f.tools)}</span>
-      <span class="fo">→ ${esc(f.out)}</span>
-      <span class="fc">${esc(f.course)}</span>
-      <span class="fp" aria-label="${its.length}개 중 ${done}개 끝남"><i style="width:${its.length ? (done / its.length) * 100 : 0}%"></i></span>
-    </a></li>`;
-  }).join("")}</ol>`;
-}
-
-function afterDownload() {
-  const rows = AFTER.steps.map((s) => `<tr><td class="an">${s.n}</td><td class="aw">${esc(s.where)}</td><td><a href="#/r/${s.item}">${esc(s.what)}</a></td><td>${esc(s.check)}</td></tr>`).join("");
-  return `<div class="after">
-    <div class="tw"><table><thead><tr><th>순서</th><th>어디서</th><th>하는 일</th><th>확인할 것</th></tr></thead><tbody>${rows}</tbody></table></div>
-    <div class="rc">
-      <p class="rcl">수집기가 저장하는 원본 한 줄 (값은 받은 그대로)</p>
-      <pre><code>${esc(AFTER.raw)}</code></pre>
-      <p class="rcl">6번에서 Spark가 만든 정리본</p>
-      <pre><code>${esc(AFTER.clean)}</code></pre>
-      <p class="rcn">${esc(AFTER.fixes)}</p>
-    </div>
-    <p class="note">${esc(AFTER.when)}</p>
-  </div>`;
-}
-
-function nextTodos() {
-  const open = ITEMS.filter((i) => (i.status === "todo" || i.status === "decide") && i.due)
-    .sort((a, b) => a.due.localeCompare(b.due)).slice(0, 8);
-  return `<ol class="next">${open.map((i) => {
-    const d = Math.ceil((day(i.due) - today()) / 86400000);
-    return `<li><a href="#/r/${i.id}"><span class="nd ${d < 0 ? "late" : d <= 2 ? "soon" : ""}">${md(i.due)}</span><span class="rid">${i.id}</span><span class="nt">${esc(i.title)}</span>${badge(i.status)}</a></li>`;
-  }).join("")}</ol>`;
-}
-
-function gantt() {
-  const start = day("2026-10-10"), end = day("2026-12-10");
-  const span = end - start;
-  const pos = (d) => Math.max(0, Math.min(100, ((day(d) - start) / span) * 100));
-  const t = today();
-  const tp = ((t - start) / span) * 100;
-  const months = ["2026-10-19", "2026-11-01", "2026-11-15", "2026-12-01"].map((d) => `<span style="left:${pos(d)}%">${md(d)}</span>`).join("");
-  const rows = SCHEDULE.map((s) => {
-    const g = GROUPS.find((x) => x.id === s.group);
-    const l = pos(s.from), w = Math.max(pos(s.to) + 100 / 61 - l, 1.2);
-    return `<li class="${s.milestone ? "ms" : ""}"><a href="#${s.group}"><span class="gl"><em>${esc(g.label)}</em>${esc(s.label)}</span>
-      <span class="gt"><i class="g-${s.group}" style="left:${l}%;width:${s.milestone ? 0 : w}%"></i>${s.milestone ? `<i class="dot" style="left:${l}%"></i>` : ""}</span>
-      <span class="gd">${md(s.from)}${s.to !== s.from ? `–${md(s.to)}` : ""}</span></a></li>`;
+// ───────────── 수집 현황 카드 ─────────────
+function collectCard(compact = false, self = false) {
+  if (!status) return "";
+  const pct = Math.floor((status.files_have / status.files_expected) * 100);
+  const rows = status.datasets.map((d) => {
+    const p = Math.floor((d.have / d.expected) * 100);
+    return `<li><span class="dn">${esc(d.name)}</span><span class="bar sm"><i style="width:${p}%"></i></span><span class="dp">${p}%</span></li>`;
   }).join("");
-  return `<div class="gantt"><div class="gh"><span class="gl"></span><span class="gt">${months}${tp >= 0 && tp <= 100 ? `<b class="now" style="left:${tp}%">오늘</b>` : ""}</span><span class="gd"></span></div><ol>${rows}</ol></div>`;
+  return `<section class="card collect">
+    <div class="card-head"><h2>원본 수집</h2>${chip(pct >= 100 ? "done" : "doing")}</div>
+    <p class="big"><b>${pct}</b><span>%</span></p>
+    <div class="bar"><i style="width:${pct}%"></i></div>
+    <p class="muted">파일 ${num(status.files_have)} / ${num(status.files_expected)}개 · ${num(Math.round(status.rows / 10000))}만 행 · ${(status.MB / 1000).toFixed(1)}GB · 중복 ${status.dup_files} · 빠짐 ${status.incomplete}</p>
+    ${compact ? "" : `<ul class="ds">${rows}</ul>`}
+    <p class="foot-note">${esc(status.where)}에서 키 ${status.keys}개로 받는 중 · 예상 완료 <b>${mdw(status.eta)}</b> · ${esc(status.updated)} 기준</p>
+    ${compact || self ? "" : `<a class="more" href="#/t/T11">자세히 보기 ${arrow}</a>`}
+  </section>`;
 }
 
-function listView() {
-  const rail = GROUPS.map((g) => {
-    const its = ITEMS.filter((i) => i.group === g.id);
-    const open = its.filter((i) => i.status !== "done").length;
-    return `<li><a href="#${g.id}"><span class="wk">${g.step !== undefined ? g.step : "·"}</span><span class="lb">${esc(g.label)}</span><span class="dt">${g.due ? md(g.due) : ""}</span>${open ? `<span class="oc">${open}</span>` : ""}</a></li>`;
-  }).join("");
+function taskRow(t, showPhase = false) {
+  const p = phaseOf(t);
+  const meta = [t.due ? `마감 ${mdw(t.due)}` : "", `담당 ${t.owner || "미정"}`, showPhase && p ? (p.milestone ? p.name : `${p.no}단계 ${p.name}`) : ""].filter(Boolean).join(" · ");
+  return `<li><a class="row" href="#/t/${t.id}">
+    <div class="row-main">${chip(t.status)}<b>${esc(t.title)}</b><span class="lead2">${esc(t.lead)}</span><span class="meta">${meta}</span></div>${arrow}</a></li>`;
+}
 
-  const sections = GROUPS.map((g) => {
-    const rows = ITEMS.filter((i) => i.group === g.id).map((i) => `
-      <li><a class="row" href="#/r/${i.id}">
-        <span class="rid">${i.id}</span>
-        <span class="rt">${esc(i.title)}${i.summary ? `<small>${esc(i.summary.length > 90 ? i.summary.slice(0, 88) + "…" : i.summary)}</small>` : ""}</span>
-        <span class="rd">${i.due ? md(i.due) : ""}</span>
-        ${badge(i.status)}
-      </a></li>`).join("");
-    const when = g.due ? `<span class="due">마감 ${md(g.due)}</span>` : "";
-    return `<section class="group" id="${g.id}"><header><h2>${g.step !== undefined ? `<span class="sn">${g.step}단계</span>` : ""}${esc(g.label)}</h2>${when}<p>${esc(g.note)}</p></header><ol class="rows">${rows}</ol></section>`;
+// ───────────── 홈 ─────────────
+function home() {
+  setTab("home");
+  const m = MIDTERM;
+  const midTasks = tasksOf("m1");
+  const midLeft = midTasks.filter((t) => t.status !== "done").length;
+  const decide = TASKS.filter((t) => t.status === "decide" && !NOW.includes(t.id));
+  const phases = PHASES.filter((p) => !p.milestone).map((p) => {
+    const s = phaseState(p.id);
+    return `<li><a href="#/roadmap/${p.id}"><span class="pn ${s.state}">${s.state === "done" ? "✓" : p.no}</span><span class="pt">${esc(p.name)}</span><span class="bar sm"><i style="width:${s.pct}%"></i></span><span class="pc">${s.done}/${s.ts.length}</span></a></li>`;
   }).join("");
 
   view.innerHTML = `
-  <section class="intro">
-    <div class="two-col">
-      <div>
-        <h2 class="sh">한 문장 목표</h2>
-        <p class="lead">비가 오면 몇 시간 뒤 댐에 물이 몰려오는지 미리 맞혀, 댐 운영자에게는 <b>지금 얼마나 내보내야 하는지</b>를, 재난 담당자에게는 <b>어느 댐이 위험해지는지</b>를 알려 준다.</p>
-        <div class="goals">
-          <a href="#/r/G-1"><span>최종 목표 ①</span><b>방류 계산기</b><small>넘치지 않을 최소 방류량</small></a>
-          <a href="#/r/G-2"><span>최종 목표 ②</span><b>재난 상황판</b><small>정상 · 경계 · 위험, 몇 시간 전에</small></a>
-          <a href="#/r/G-3" class="core"><span>두 화면이 공유</span><b>유입량 예측</b><small>3 · 6 · 12시간 뒤, 관측소·ASOS로 정확도 올리기</small></a>
-        </div>
-      </div>
-      <div>
-        <h2 class="sh">가까운 마감 할 일</h2>
-        ${nextTodos()}
-      </div>
-    </div>
-    <h2 class="sh">흐름 한눈에 <small>단계를 누르면 그 단계 할 일로 갑니다</small></h2>
-    ${flowStrip()}
-    <h2 class="sh">다운로드한 뒤의 순서 <small>원본은 고치지 않고 받고, 고치는 일은 하둡 안에서</small></h2>
-    ${afterDownload()}
-    <h2 class="sh">전체 구조 <small>중간발표 슬라이드 ② 초안</small></h2>
-    ${archFigure()}
-    <h2 class="sh">남은 일정 <small>10/10 기준으로 다시 짠 계획</small></h2>
-    ${gantt()}
+  <section class="hero">
+    <p class="eyebrow">${md(UPDATED.slice(0, 10))} 기준</p>
+    <h1>${esc(HERO.title)}</h1>
+    <p class="sub">${esc(HERO.sub)}</p>
   </section>
-  <div class="board"><nav class="rail" aria-label="단계"><ol>${rail}</ol></nav><div class="groups">${sections}</div></div>`;
+
+  <a class="card deadline" href="#/roadmap/m1">
+    <div><p class="eyebrow">다음 마감</p><p class="dl-title">${esc(m.label)} <b>${dday(m.date)}</b></p>
+    <p class="muted">${mdw(m.date)} ${m.time} · 남은 일 ${midLeft}개 · 늦은 제출 불가</p></div>${arrow}
+  </a>
+
+  ${collectCard()}
+
+  <section class="block">
+    <h2 class="bh">지금 할 일</h2>
+    <ul class="list">${NOW.map((id) => taskRow(byId[id], true)).join("")}</ul>
+  </section>
+
+  ${decide.length ? `<section class="block">
+    <h2 class="bh">그 밖에 결정할 것 <span class="count">${decide.length}</span></h2>
+    <ul class="list">${decide.map((t) => taskRow(t, true)).join("")}</ul>
+  </section>` : ""}
+
+  <section class="block">
+    <h2 class="bh">단계별 진행</h2>
+    <ul class="card phases">${phases}</ul>
+    <a class="more out" href="#/roadmap">로드맵 전체 보기 ${arrow}</a>
+  </section>
+
+  <section class="block">
+    <h2 class="bh">최근 소식</h2>
+    <ul class="card news">${RECENT.map((r) => `<li><span class="nd">${esc(r.d)}</span><span>${esc(r.t)}</span></li>`).join("")}</ul>
+  </section>
+
+  <section class="block">
+    <h2 class="bh">우리가 만드는 것</h2>
+    <div class="goals">
+      <a class="card goal" href="#/t/T60"><span class="eyebrow">최종 목표 ①</span><b>방류 계산기</b><span class="muted">댐 운영자 · 넘치지 않을 최소 방류량</span></a>
+      <a class="card goal" href="#/t/T61"><span class="eyebrow">최종 목표 ②</span><b>재난 상황판</b><span class="muted">재난 담당자 · 어느 댐이 위험해지나</span></a>
+    </div>
+    <a class="more out" href="#/t/G6">자세히 보기 ${arrow}</a>
+  </section>`;
+}
+
+// ───────────── 로드맵 ─────────────
+function roadmap(focus) {
+  setTab("roadmap");
+  const items = PHASES.map((p) => {
+    const s = phaseState(p.id);
+    const open = focus ? focus === p.id : CURRENT.includes(p.id);
+    const rows = s.ts.map((t) => `<li><a class="trow" href="#/t/${t.id}">${chip(t.status)}<span class="tt">${esc(t.title)}</span><span class="td">${t.due ? md(t.due) : ""}</span>${arrow}</a></li>`).join("");
+    return `<li class="step ${s.state}${p.milestone ? " ms" : ""}" id="${p.id}">
+      <details ${open ? "open" : ""}>
+        <summary>
+          <span class="pn ${s.state}">${s.state === "done" ? "✓" : p.no}</span>
+          <span class="sm-main"><b>${esc(p.name)}</b><span class="muted">${esc(p.what)}</span><span class="sm-meta">${esc(p.range)} · ${s.done}/${s.ts.length} 끝남</span></span>
+          <span class="chev" aria-hidden="true"></span>
+        </summary>
+        <ul class="tasks">${rows}</ul>
+      </details>
+    </li>`;
+  }).join("");
+  view.innerHTML = `
+  <section class="page-head">
+    <h1>로드맵</h1>
+    <p class="sub">단계를 누르면 할 일이 펼쳐져요. 할 일을 누르면 왜·어떻게·다 됐다의 기준이 나와요.</p>
+    <div class="pills"><a href="#/t/G2">전체 구조 그림</a><a href="#/t/G3">다운로드한 뒤의 순서</a><a href="#/t/G1">VM 가이드</a></div>
+  </section>
+  <ol class="steps">${items}</ol>`;
+  if (focus) document.getElementById(focus)?.scrollIntoView({ block: "start" });
+}
+
+// ───────────── 할 일·가이드 상세 ─────────────
+function archFigure() {
+  const box = (t, s, cls = "") => `<div class="ab ${cls}"><b>${t}</b>${s ? `<span>${s}</span>` : ""}</div>`;
+  const down = (t) => `<div class="aarrow"><span>${t}</span></div>`;
+  return `<figure class="arch" aria-label="WaterPulse 전체 구조">
+    <p class="alabel">데이터 출처 · 공공 API</p>
+    <div class="agrid four">${box("수문 운영 정보", "댐 수위·유입·방류")}${box("우량수위 관측소", "상류 비·강")}${box("제원·댐코드", "계획홍수위·유역")}${box("기상청 ASOS", "강수·기온·습도")}</div>
+    ${down("Python 수집기 (맥미니)")}
+    <div class="agrid two">${box("원본 파일", "받은 그대로 JSON Lines", "file")}${box("MySQL 기준표", "좌표·관측소 연결·수위 곡선", "db")}</div>
+    <div class="agrid two">${down("Flume · hdfs dfs -put")}${down("Sqoop import")}</div>
+    <div class="hadoop"><p class="alabel">빅데이터 관리 · 하둡 (수업 VM)</p>
+      <div class="shelves">${box("① 원본 선반", "HDFS /etl · Hive 표(STRING)", "shelf")}<i class="sa">Spark 정제</i>${box("② 정리 선반", "Parquet · 연도 파티션 · Impala", "shelf")}<i class="sa">Spark + Python</i>${box("③ 결과 선반", "예측·방류·경보·품질표", "shelf")}</div>
+    </div>
+    ${down("Sqoop export")}
+    <div class="agrid two">${box("MySQL 결과 DB", "forecast · release · alert", "db")}${box("웹 서버", "Flask", "srv")}</div>
+    ${down("브라우저")}
+    <div class="agrid two">${box("방류 계산기", "댐 운영자", "ui")}${box("재난 상황판", "재난 담당자", "ui")}</div>
+  </figure>`;
 }
 
 function tableHtml(t) {
@@ -181,63 +168,86 @@ function tableHtml(t) {
     t.rows.map((r) => `<tr>${r.map((c) => `<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
 }
 
-function previewable(l) { return l && (l.kind === "pdf" || l.kind === "app"); }
+function linkCard(l) {
+  const ext = !l.href.startsWith("#");
+  return `<li><a class="lrow" href="${l.href}"${ext ? ' target="_blank" rel="noopener"' : ""}><span class="kind">${esc(l.kind)}</span><span class="lt"><b>${esc(l.label)}</b>${l.sub ? `<span class="muted">${esc(l.sub)}</span>` : ""}</span>${arrow}</a></li>`;
+}
 
-function detailView(id, tab) {
-  const i = ITEMS.find((x) => x.id === id);
-  if (!i) return listView();
-  const g = GROUPS.find((x) => x.id === i.group);
-  const idx = ITEMS.indexOf(i);
-  const prev = ITEMS[idx - 1], next = ITEMS[idx + 1];
-  const links = i.links || [];
-  const pv = links.filter(previewable);
-  const sel = pv[Math.min(tab || 0, pv.length - 1)];
+function detail(id) {
+  const t = byId[id];
+  if (!t) return home();
+  const isGuide = id.startsWith("G");
+  setTab(isGuide ? "docs" : "roadmap");
+  const p = phaseOf(t);
+  const siblings = isGuide ? GUIDES : tasksOf(t.phase);
+  const i = siblings.indexOf(t);
+  const prev = siblings[i - 1], next = siblings[i + 1];
+  const sec = (h, body) => (body ? `<section class="sec"><h2>${h}</h2>${body}</section>` : "");
+  const crumb = isGuide ? `<a href="#/docs">자료</a><span>가이드</span>` : `<a href="#/roadmap/${t.phase}">로드맵</a><span>${p.milestone ? p.name : `${p.no}단계 · ${esc(p.name)}`}</span>`;
 
-  const sec = (title, body) => (body ? `<section class="ds"><h3>${title}</h3>${body}</section>` : "");
   view.innerHTML = `
   <article class="detail">
-    <nav class="crumbs"><a href="#${g.id}">전체 목록</a><span>${g.step !== undefined ? `${g.step}단계 · ` : ""}${esc(g.label)}</span></nav>
-    <header class="dh">
-      <span class="rid big">${i.id}</span>
-      <h2>${esc(i.title)}</h2>
-      <p class="meta">${badge(i.status)}${i.due ? `<span>마감 ${md(i.due)}</span>` : ""}<span>담당 ${esc(i.owner || "미정")}</span></p>
-    </header>
-    <div class="dbody">
-      ${i.quote ? sec("과제 설명서 원문", `<blockquote lang="en">${esc(i.quote)}</blockquote>`) : ""}
-      ${sec(i.group === "req" ? "우리가 채우는 방법" : "무엇을 하나", i.summary ? `<p>${esc(i.summary)}</p>` : "")}
-      ${i.gap ? `<p class="gap"><b>아직 빈 곳</b>${esc(i.gap)}</p>` : ""}
-      ${i.figure === "arch" ? archFigure() : ""}
-      ${sec("정리", i.specs ? `<dl class="specs">${i.specs.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>` : "")}
-      ${sec(i.table && !i.steps ? "표" : "세부", i.table ? tableHtml(i.table) : "")}
-      ${sec("방법", i.steps ? `<ol class="steps">${i.steps.map((s) => `<li>${esc(s)}</li>`).join("")}</ol>` : "")}
-      ${sec("명령 · 설정 예시", i.code ? `<pre><code>${esc(i.code)}</code></pre>` : "")}
-      ${i.note ? `<p class="note">${esc(i.note)}</p>` : ""}
-      ${sec("조심할 것", i.traps ? `<ul class="traps">${i.traps.map((s) => `<li>${esc(s)}</li>`).join("")}</ul>` : "")}
-      ${i.next ? sec("이어지는 곳", `<p>${i.next.map(esc).join(" · ")}</p>`) : ""}
-      ${links.length ? sec("관련 자료", `<ul class="links">${links.map((l) => {
-        const k = pv.indexOf(l);
-        const on = l === sel;
-        return `<li><span class="kind">${KIND[l.kind]}</span>${k >= 0 ? `<a href="#/r/${i.id}/${k}" class="${on ? "on" : ""}">${esc(l.label)}${on ? " · 아래에 미리보기" : ""}</a>` : esc(l.label)} <a class="ext" href="${l.href}" target="_blank" rel="noopener">새 창</a></li>`;
-      }).join("")}</ul>`) : ""}
-      ${sel ? `<div class="pv"><iframe src="${sel.href}" title="${esc(sel.label)}" loading="lazy"></iframe></div>` : ""}
-    </div>
+    <nav class="crumbs">${crumb}</nav>
+    <h1>${esc(t.title)}</h1>
+    <div class="dmeta">${t.status ? chip(t.status) : `<span class="chip guide">가이드</span>`}${t.due ? `<span>마감 ${mdw(t.due)} · ${dday(t.due)}</span>` : ""}${isGuide ? "" : `<span>담당 ${esc(t.owner || "미정")}</span>`}</div>
+    <p class="lead">${esc(t.lead)}</p>
+    ${t.live ? collectCard(false, true) : ""}
+    ${t.figure === "arch" ? archFigure() : ""}
+    ${sec(isGuide ? "배경" : "왜 하나요", t.why ? `<p>${esc(t.why)}</p>` : "")}
+    ${sec(isGuide ? "내용" : "어떻게 하나요", t.how ? `<ol class="how">${t.how.map((s) => `<li>${esc(s)}</li>`).join("")}</ol>` : "")}
+    ${sec("자세히", t.table ? tableHtml(t.table) : "")}
+    ${sec("명령 · 설정 예시", t.code ? `<pre><code>${esc(t.code)}</code></pre>` : "")}
+    ${sec("다 됐다의 기준", t.done ? `<ul class="check">${t.done.map(([s, ok]) => `<li class="${ok ? "ok" : ""}"><span class="box" aria-label="${ok ? "끝남" : "아직"}">${ok ? "✓" : ""}</span>${esc(s)}</li>`).join("")}</ul>` : "")}
+    ${sec("지금 상황", t.now ? `<p class="now">${esc(t.now)}</p>` : "")}
+    ${sec("주의할 점", t.traps ? `<ul class="traps">${t.traps.map((s) => `<li>${esc(s)}</li>`).join("")}</ul>` : "")}
+    ${sec("참고 자료", t.links ? `<ul class="list links">${t.links.map(linkCard).join("")}</ul>` : "")}
     <nav class="pager">
-      ${prev ? `<a href="#/r/${prev.id}"><span>이전</span>${prev.id} ${esc(prev.title)}</a>` : "<span></span>"}
-      ${next ? `<a href="#/r/${next.id}" class="nx"><span>다음</span>${next.id} ${esc(next.title)}</a>` : "<span></span>"}
+      ${prev ? `<a href="#/t/${prev.id}"><span>이전</span>${esc(prev.title)}</a>` : "<span></span>"}
+      ${next ? `<a href="#/t/${next.id}" class="nx"><span>다음</span>${esc(next.title)}</a>` : "<span></span>"}
     </nav>
   </article>`;
-  view.focus({ preventScroll: true });
-  window.scrollTo(0, 0);
 }
 
+// ───────────── 과제 요구사항 ─────────────
+function reqs() {
+  setTab("req");
+  const groups = REQS.map((g) => `
+    <section class="block">
+      <h2 class="bh">${esc(g.group)}</h2>
+      <ul class="card reqs">${g.items.map((r) => `<li>
+        <div class="rq-top">${chip(r.status)}<b>${esc(r.ko)}</b></div>
+        <p class="en">${esc(r.en)}</p>
+        <p class="where">${r.where.map((w) => `<a href="#/t/${w}">${esc(byId[w]?.title || w)}</a>`).join("")}</p>
+      </li>`).join("")}</ul>
+    </section>`).join("");
+  view.innerHTML = `<section class="page-head"><h1>과제 요구사항</h1><p class="sub">과제 설명서 문장을 쉬운 말로 바꾸고, 어디서 채우는지 연결했어요.</p></section>${groups}`;
+}
+
+// ───────────── 자료 ─────────────
+function docs() {
+  setTab("docs");
+  view.innerHTML = `<section class="page-head"><h1>자료</h1><p class="sub">가이드, 보고서, 시제품, 코드를 한곳에 모았어요.</p></section>
+  ${DOCS.map((d) => `<section class="block"><h2 class="bh">${esc(d.title)}</h2><ul class="list links">${d.items.map(linkCard).join("")}</ul></section>`).join("")}
+  <section class="block"><h2 class="bh">진행 기록</h2><ul class="card news">${LOG.map(([d, t]) => `<li><span class="nd">${esc(d)}</span><span>${esc(t)}</span></li>`).join("")}</ul></section>`;
+}
+
+// ───────────── 주소 ─────────────
 function route() {
-  const m = location.hash.match(/^#\/r\/([^/]+)(?:\/(\d+))?/);
-  if (m) return detailView(decodeURIComponent(m[1]), Number(m[2] || 0));
-  if (!view.querySelector(".board")) listView();
-  const g = location.hash.slice(1);
-  if (g) document.getElementById(g)?.scrollIntoView({ block: "start" });
+  let h = location.hash || "#/";
+  const old = h.match(/^#\/r\/([^/]+)/) || h.match(/^#([a-z0-9]+)$/);
+  if (old && ALIASES[old[1]]) { location.replace(ALIASES[old[1]]); return; }
+  let m;
+  if ((m = h.match(/^#\/t\/([A-Z0-9]+)/))) detail(m[1]);
+  else if ((m = h.match(/^#\/roadmap(?:\/(\w+))?/))) roadmap(m[1]);
+  else if (h.startsWith("#/req")) reqs();
+  else if (h.startsWith("#/docs")) docs();
+  else home();
+  if (!h.match(/^#\/roadmap\/\w+/)) window.scrollTo(0, 0);
+  view.focus({ preventScroll: true });
 }
 
-masthead();
+document.getElementById("d-mid").textContent = `중간 ${dday(MIDTERM.date)}`;
+document.getElementById("d-fin").textContent = `최종 ${dday(FINAL.date)}`;
 window.addEventListener("hashchange", route);
-route();
+fetch("status.json", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).catch(() => null)
+  .then((s) => { status = s; route(); });

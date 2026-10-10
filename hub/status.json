@@ -1,0 +1,64 @@
+{
+ "updated": "2026-10-10 23:03",
+ "where": "맥미니 ~/WaterPulse",
+ "keys": 3,
+ "eta": "2026-10-12",
+ "files_have": 2799,
+ "files_expected": 13629,
+ "rows": 11804693,
+ "MB": 2796.5,
+ "dup_files": 0,
+ "incomplete": 0,
+ "datasets": [
+  {
+   "id": "dam_hourly",
+   "name": "댐 시간 자료",
+   "have": 408,
+   "expected": 1239,
+   "rows": 3459237,
+   "MB": 720.3,
+   "dup": 0,
+   "incomplete": 0
+  },
+  {
+   "id": "dam_daily",
+   "name": "댐 일 자료",
+   "have": 1239,
+   "expected": 1239,
+   "rows": 412185,
+   "MB": 88.6,
+   "dup": 0,
+   "incomplete": 0
+  },
+  {
+   "id": "rain_hourly",
+   "name": "비 관측소",
+   "have": 420,
+   "expected": 3927,
+   "rows": 3245683,
+   "MB": 526.4,
+   "dup": 0,
+   "incomplete": 0
+  },
+  {
+   "id": "level_hourly",
+   "name": "강 관측소",
+   "have": 533,
+   "expected": 5124,
+   "rows": 3190132,
+   "MB": 515.8,
+   "dup": 0,
+   "incomplete": 0
+  },
+  {
+   "id": "asos_hourly",
+   "name": "기상청 ASOS",
+   "have": 199,
+   "expected": 2100,
+   "rows": 1497456,
+   "MB": 945.4,
+   "dup": 0,
+   "incomplete": 0
+  }
+ ]
+}

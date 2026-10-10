@@ -4,35 +4,28 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>WaterPulse 프로젝트 허브</title>
-<meta name="description" content="빅데이터실무(ITM 527) 팀프로젝트 WaterPulse — 과제 요구사항, 단계별 할 일과 방법, 문서와 결과물">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230F2233'/%3E%3Cpath d='M16 6c4 5 7 9 7 13a7 7 0 0 1-14 0c0-4 3-8 7-13z' fill='%231D6FB8'/%3E%3C/svg%3E">
+<meta name="description" content="빅데이터실무 팀프로젝트 WaterPulse — 지금 어디까지 왔는지, 무엇을 하는지, 다음에 무엇을 하는지">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%233182F6'/%3E%3Cpath d='M16 7c4 5 6.5 8.5 6.5 12a6.5 6.5 0 0 1-13 0C9.5 15.5 12 12 16 7z' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/sun-typeface/SUIT@2/fonts/variable/woff2/SUIT-Variable.css">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap">
 <link rel="stylesheet" href="hub.css">
 </head>
 <body>
-<header class="masthead">
-  <div class="wrap">
-    <p class="course">빅데이터실무 ITM 527 · 2026 2학기 · 팀프로젝트</p>
-    <h1><span class="name">WaterPulse</span><span class="ko">비가 오면 몇 시간 뒤 댐에 물이 몰려올까 — 방류량 계산과 재난 경고</span></h1>
-    <p class="facts" id="facts"></p>
-    <div class="actions">
-      <a class="btn primary" href="#mid">중간발표 할 일</a>
-      <a class="btn" href="../release.html">방류 계산기 시제품</a>
-      <a class="btn" href="../alert.html">재난 상황판 시제품</a>
-      <a class="btn" href="https://github.com/keemlogan/waterpulse">GitHub 저장소</a>
-    </div>
+<header class="top">
+  <div class="top-in">
+    <a class="brand" href="#/"><span class="logo" aria-hidden="true"></span><span><b>WaterPulse</b><small>빅데이터실무 팀프로젝트</small></span></a>
+    <span class="ddays"><span id="d-mid"></span><span id="d-fin"></span></span>
   </div>
+  <nav class="tabs" aria-label="화면">
+    <a href="#/" data-tab="home">홈</a>
+    <a href="#/roadmap" data-tab="roadmap">로드맵</a>
+    <a href="#/req" data-tab="req">과제 요구사항</a>
+    <a href="#/docs" data-tab="docs">자료</a>
+  </nav>
 </header>
-
-<main class="wrap" id="view" tabindex="-1"></main>
-
-<footer class="wrap foot">
-  <p>과제 설명서(Project_rev4_updated)의 요구사항 문구를 그대로 옮기고, 요구사항마다 우리 방법과 결과물을 연결했습니다.</p>
-  <p>시제품과 보고서의 숫자는 맥북 로컬 시뮬레이션(2020~2025년 실데이터) 결과입니다. 하둡(실습 VM)에서 다시 낸 숫자는 단계별 카드에 따로 표시합니다.</p>
+<main id="view" tabindex="-1"></main>
+<footer class="foot">
+  <p>시제품과 보고서의 숫자는 맥북 로컬 시뮬레이션(2020~2025년 실데이터) 결과예요. 하둡(수업 VM)에서 다시 낸 숫자는 할 일마다 따로 적어요.</p>
+  <p><a href="../">시제품 화면</a> · <a href="https://github.com/keemlogan/waterpulse">GitHub 저장소</a></p>
 </footer>
 <script type="module" src="hub.js"></script>
 </body>
