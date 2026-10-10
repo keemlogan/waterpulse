@@ -41,12 +41,12 @@ function collectCard(compact = false, self = false) {
     return `<li><span class="dn">${esc(d.name)}</span><span class="bar sm"><i style="width:${p}%"></i></span><span class="dp">${p}%</span></li>`;
   }).join("");
   return `<section class="card collect">
-    <div class="card-head"><h2>원본 수집</h2>${chip(pct >= 100 ? "done" : "doing")}</div>
+    <div class="card-head"><h2>원본 수집</h2>${chip(status.state === "done" || pct >= 100 ? "done" : "doing")}</div>
     <p class="big"><b>${pct}</b><span>%</span></p>
     <div class="bar"><i style="width:${pct}%"></i></div>
     <p class="muted">파일 ${num(status.files_have)} / ${num(status.files_expected)}개 · ${num(Math.round(status.rows / 10000))}만 행 · ${(status.MB / 1000).toFixed(1)}GB · 중복 ${status.dup_files} · 빠짐 ${status.incomplete}</p>
     ${compact ? "" : `<ul class="ds">${rows}</ul>`}
-    <p class="foot-note">${esc(status.where)}에서 키 ${status.keys}개로 받는 중 · 예상 완료 <b>${mdw(status.eta)}</b> · ${esc(status.updated)} 기준</p>
+    <p class="foot-note">${esc(status.where)}에서 키 ${status.keys}개로 받는 중 · 예상 완료 <b>${mdw(status.eta)}</b> · ${esc(status.updated)} 기준${status.auto ? " · 1시간마다 자동 갱신" : ""}</p>
     ${compact || self ? "" : `<a class="more" href="#/t/T11">자세히 보기 ${arrow}</a>`}
   </section>`;
 }
