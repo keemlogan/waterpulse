@@ -2,7 +2,7 @@
 // 상태: done 끝남 · doing 진행 중 · todo 할 일 · decide 결정 필요 · wait 대기(앞 단계가 끝나야 시작)
 // 내용을 고치면 UPDATED도 바꾼다.
 
-export const UPDATED = "2026-10-10 23:40";
+export const UPDATED = "2026-10-10 23:50";
 export const MIDTERM = { date: "2026-10-19", label: "중간발표 제출", time: "14:00" };
 export const FINAL = { date: "2026-12-07", label: "최종발표 제출", time: "14:00" };
 
@@ -16,6 +16,7 @@ const L = {
   webAlert: { label: "재난 상황판", sub: "시제품 · 과거 큰비 되감기", href: "../alert.html", kind: "화면" },
   collector: { label: "원본 수집기 collect_raw.py", sub: "지금 맥미니에서 도는 코드", href: GH + "code/collector/collect_raw.py", kind: "코드" },
   verify: { label: "원본 검사기 verify_raw.py", sub: "빠진 파일·중복·줄 수 검사", href: GH + "code/collector/verify_raw.py", kind: "코드" },
+  publish: { label: "현황 올리기 publish_status.py", sub: "1시간마다 허브 수집 카드 갱신", href: GH + "code/collector/publish_status.py", kind: "코드" },
   etl: { label: "정제 etl_spark.py", sub: "시뮬레이션 때 쓴 Spark 정제", href: GH + "code/sim/etl_spark.py", kind: "코드" },
   analyze: { label: "분석 analyze.py", sub: "반응 시간·예측 모델", href: GH + "code/sim/analyze.py", kind: "코드" },
   scen: { label: "큰비 되감기 scenarios.py", sub: "방류·경보 시나리오", href: GH + "code/sim/scenarios.py", kind: "코드" },
@@ -46,6 +47,7 @@ export const CURRENT = ["p0", "p1", "m1"];
 // 첫 화면 "지금 할 일"에 올릴 순서
 export const NOW = ["T02", "T03", "T01", "T11", "T70", "T71"];
 export const RECENT = [
+  { d: "10/10", t: "허브 개편 — 할 일마다 왜·어떻게·다 됐다의 기준, 수집 현황은 1시간마다 자동 갱신" },
   { d: "10/10", t: "원본 전체 수집 시작 — 맥미니에서 키 3개로, 10/12 끝날 예정" },
   { d: "10/10", t: "관측소 자료가 해마다 1시간씩 빠지는 문제를 찾아 고침(703개 파일 보충)" },
   { d: "10/10", t: "최종 목표 확정 — 방류 계산기와 재난 상황판 둘 다" },
@@ -113,10 +115,11 @@ export const TASKS = [
       "키·기능마다 하루 호출 수를 세다가 한도에 닿으면 그 일꾼만 자정까지 쉬어요. 세 키가 같은 목록을 나눠 받아서 같은 작업을 두 번 받지 않아요.",
       "한 번에 받는 줄 수를 지켜요(댐 400 · 관측소 500 · ASOS 999). 넘기면 오류 없이 빈 답이 와요.",
       "줄마다 조회 조건만 덧붙여요: q_damcode(댐), q_stn(관측소·지점), q_from·q_to(기간). 값은 그대로예요.",
-      "끊겨도 다시 실행하면 받은 파일은 건너뛰고 이어 받아요. 오류로 멈추면 1분 뒤 자동으로 다시 떠요."],
+      "끊겨도 다시 실행하면 받은 파일은 건너뛰고 이어 받아요. 오류로 멈추면 1분 뒤 자동으로 다시 떠요.",
+      "1시간마다 현황을 집계해 이 허브의 수집 카드를 갱신해요(publish_status.py). 이 저장소에만 쓸 수 있는 전용 키를 써요."],
     done: [["5개 기능 모두 시험 통과(받은 줄 수 = 전체 건수)", true], ["맥미니에서 실행", true]],
     now: "끝났어요. 10/10 관측소 24시 문제를 고친 판이 돌고 있어요.",
-    links: [L.collector, L.verify] },
+    links: [L.collector, L.verify, L.publish] },
   { id: "T11", phase: "p1", status: "doing", due: "2026-10-12", title: "원본 전체 받기", live: true,
     lead: "맥미니에서 키 3개로 받는 중이에요. 10/12(월)에 끝날 예정이에요.",
     why: "분석과 경보 검증에는 2006년부터의 긴 기록이 필요해요. 큰비는 드물어서, 기간이 길수록 '큰물 때 예측이 맞는지'를 제대로 잴 수 있어요.",
@@ -133,7 +136,7 @@ export const TASKS = [
     how: ["맥미니에서 verify_raw.py를 실행하면 자료별 결과가 state/verify.json에 남아요. 수집이 다 끝나면 자동으로 한 번 돌아요.",
       "10/10에 찾은 문제: 관측소 API는 하루를 01~24시로 적어서, 끝 시각을 23시로 넣으면 매년 '12월 31일 24시'가 빠졌어요. 끝 시각을 24시로 바꾸고, 이미 받은 703개 파일에 빠진 한 줄을 채웠어요."],
     done: [["중복 시각 0", true], ["줄 수 부족 0", true], ["전체 수집 후 빠진 파일 0", false]],
-    now: "10/10 23:03 검사: 받은 2,799개 파일에서 중복 0, 줄 수 부족 0. 24시 줄이 없는 파일 1개는 원본에 그 시각 자료가 없는 것으로 보여요.",
+    now: "첫 화면 수집 카드의 '중복'·'빠짐' 숫자가 1시간마다 갱신돼요. 마지막 전체 검사(10/10 23:03): 2,799개 파일에서 중복 0, 줄 수 부족 0. 24시 줄이 없는 파일 1개는 원본에 그 시각 자료가 없는 것으로 보여요. 수집이 끝나면 전체 검사가 자동으로 한 번 더 돌아요.",
     links: [L.verify] },
   { id: "T13", phase: "p1", status: "todo", due: "2026-10-14", title: "기준표 만들기 (MySQL)",
     lead: "API로 받지 못하는 정보를 작은 표로 만들어 MySQL에 넣어요.",
@@ -419,7 +422,7 @@ export const DOCS = [
   { title: "가이드", items: GUIDES.map((g) => ({ label: g.title, sub: g.lead, href: `#/t/${g.id}`, kind: "가이드" })) },
   { title: "보고서", items: [L.overview, L.sim, L.dash] },
   { title: "시제품 화면", items: [L.webRelease, L.webAlert, L.webIndex] },
-  { title: "코드", items: [L.collector, L.verify, L.etl, L.analyze, L.scen, L.common] },
+  { title: "코드", items: [L.collector, L.verify, L.publish, L.etl, L.analyze, L.scen, L.common] },
 ];
 
 export const LOG = [
@@ -429,6 +432,7 @@ export const LOG = [
   ["10-06", "방류 계산기·재난 상황판 추가, 리뷰 반영(9시간 예측 버그, 채점 기준 변경, 방류 권고 1.8배 → 1.01배)"],
   ["10-10", "최종 목표 확정(방류 계산기 + 재난 상황판), 프로젝트 허브 공개"],
   ["10-10", "원본 전체 수집 시작(맥미니, 키 3개), 관측소 24시 누락 발견·수정"],
+  ["10-10", "허브 개편(홈·로드맵·과제 요구사항·자료), 수집 현황 1시간마다 자동 갱신"],
 ];
 
 // 예전 주소(#/r/ID, #s3 등)를 새 화면으로 잇는다.
