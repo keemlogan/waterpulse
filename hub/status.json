@@ -1,14 +1,14 @@
 {
- "updated": "2026-10-11 03:31",
+ "updated": "2026-10-11 04:31",
  "where": "맥미니 ~/WaterPulse",
  "keys": 3,
  "eta": "2026-10-12",
  "state": "running",
  "auto": true,
- "files_have": 10538,
+ "files_have": 10668,
  "files_expected": 13629,
- "rows": 69922254,
- "MB": 17970.0,
+ "rows": 70947829,
+ "MB": 18624.0,
  "dup_files": 0,
  "incomplete": 0,
  "datasets": [
@@ -55,10 +55,10 @@
   {
    "id": "asos_hourly",
    "name": "기상청 ASOS",
-   "have": 1603,
+   "have": 1733,
    "expected": 2100,
-   "rows": 13113326,
-   "MB": 8304.5,
+   "rows": 14138901,
+   "MB": 8958.5,
    "dup": 0,
    "incomplete": 0
   }
