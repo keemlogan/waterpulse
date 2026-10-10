@@ -1,4 +1,4 @@
-import { GROUPS, ITEMS, FLOW, SCHEDULE, UPDATED, MIDTERM, FINAL } from "./data.js";
+import { GROUPS, ITEMS, FLOW, SCHEDULE, UPDATED, MIDTERM, FINAL, AFTER } from "./data.js";
 
 const view = document.getElementById("view");
 const STATUS = { done: "끝남", doing: "진행 중", todo: "할 일", decide: "팀 결정 필요" };
@@ -87,6 +87,21 @@ function flowStrip() {
   }).join("")}</ol>`;
 }
 
+function afterDownload() {
+  const rows = AFTER.steps.map((s) => `<tr><td class="an">${s.n}</td><td class="aw">${esc(s.where)}</td><td><a href="#/r/${s.item}">${esc(s.what)}</a></td><td>${esc(s.check)}</td></tr>`).join("");
+  return `<div class="after">
+    <div class="tw"><table><thead><tr><th>순서</th><th>어디서</th><th>하는 일</th><th>확인할 것</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <div class="rc">
+      <p class="rcl">수집기가 저장하는 원본 한 줄 (값은 받은 그대로)</p>
+      <pre><code>${esc(AFTER.raw)}</code></pre>
+      <p class="rcl">6번에서 Spark가 만든 정리본</p>
+      <pre><code>${esc(AFTER.clean)}</code></pre>
+      <p class="rcn">${esc(AFTER.fixes)}</p>
+    </div>
+    <p class="note">${esc(AFTER.when)}</p>
+  </div>`;
+}
+
 function nextTodos() {
   const open = ITEMS.filter((i) => (i.status === "todo" || i.status === "decide") && i.due)
     .sort((a, b) => a.due.localeCompare(b.due)).slice(0, 8);
@@ -151,6 +166,8 @@ function listView() {
     </div>
     <h2 class="sh">흐름 한눈에 <small>단계를 누르면 그 단계 할 일로 갑니다</small></h2>
     ${flowStrip()}
+    <h2 class="sh">다운로드한 뒤의 순서 <small>원본은 고치지 않고 받고, 고치는 일은 하둡 안에서</small></h2>
+    ${afterDownload()}
     <h2 class="sh">전체 구조 <small>중간발표 슬라이드 ② 초안</small></h2>
     ${archFigure()}
     <h2 class="sh">남은 일정 <small>10/10 기준으로 다시 짠 계획</small></h2>

@@ -50,6 +50,26 @@ export const FLOW = [
   { group: "s6", title: "웹", tools: "Sqoop export → MySQL → 웹", course: "강의 03 Sqoop export", out: "방류 계산기 · 재난 상황판" },
 ];
 
+// 다운로드 후 순서: 수집기는 값을 고치지 않고 형태만 맞춘다. 고치는 일은 본 VM의 Spark가 한다.
+export const AFTER = {
+  raw: '{"damcode":"1012110","stdt":"20230101","eddt":"20230131","obsrdt":"01-01 24시 ","inflowqy":54.583,"rsvwtqy":"1,857.835","totdcwtrqy":"0.000", …}',
+  clean: "damcode=1012110 | ts=2023-01-02 00:00 | inflow=54.583 | storage=1857.835 | outflow=0.0 | year=2023",
+  fixes: "조회 기간에서 연도 2023을 붙이고, 24시를 다음 날 00시로, 쉼표를 빼고 숫자로. 같은 칸이 숫자·글자로 섞여 오는 것도 여기서 맞춘다. (원본 줄은 2023년 1월 소양강댐 실제 응답, 댐 번호·조회 기간만 수집기가 덧붙임)",
+  steps: [
+    { n: 1, where: "수집 PC", what: "빠진 것 다시 받기", check: "호출 기록의 실패 목록이 0, 댐·월별 받은 행 수가 예상과 맞는지", item: "C-0" },
+    { n: 2, where: "수집 PC", what: "원본을 압축해 공유 드라이브에 백업", check: "압축 전후 파일 수가 같은지 (최종 제출의 데이터 스냅샷)", item: "S-5" },
+    { n: 3, where: "수집 PC → 본 VM", what: "원본 폴더를 VM 공유 폴더(spool)로 옮기기", check: "VM 안에서 파일이 보이는지", item: "I-2" },
+    { n: 4, where: "본 VM", what: "HDFS 원본 칸에 올리기 — 중간은 hdfs dfs -put, 최종은 Flume", check: "hdfs dfs -du로 용량 확인", item: "I-1" },
+    { n: 5, where: "본 VM", what: "Hive 원본 표 만들기 (모든 칸 STRING)", check: "SELECT COUNT(*)가 수집 통계의 행 수와 같은지", item: "H-1" },
+    { n: 6, where: "본 VM", what: "Spark 정제 → 정리본 Parquet (연도 파티션)", check: "고친 개수 출력, 품질표", item: "P-2" },
+    { n: 7, where: "본 VM", what: "Hive 정리본 표 등록 → Impala 조회", check: "JSON vs Parquet 용량, 파티션 전후 조회 시간", item: "H-3" },
+    { n: 8, where: "본 VM", what: "기준표(좌표·관측소 연결 등) MySQL → Sqoop import", check: "표 행 수", item: "I-3" },
+    { n: 9, where: "본 VM", what: "Spark 학습표 → Python 모델 → 결과 표(예측·방류·경보)", check: "기준선 대비 개선률", item: "A-3" },
+    { n: 10, where: "본 VM", what: "결과 표 Sqoop export → MySQL → 웹 화면", check: "화면 숫자가 결과 표와 같은지", item: "H-4" },
+  ],
+  when: "중간발표 전(10/13~16): 이미 받아 둔 샘플로 3~7번과 첫 예측 숫자 1개를 VM에서 돌려 캡처한다. 중간발표 후: 전체 수집이 끝나면 1~10번을 전체 데이터로 다시 돌린다.",
+};
+
 // 남은 일정(2026-10-10 기준으로 다시 짠 것)
 export const SCHEDULE = [
   { from: "2026-10-10", to: "2026-10-12", label: "준비: VM 버전 확인, 역할 나누기, 인증키 발급", group: "s0" },

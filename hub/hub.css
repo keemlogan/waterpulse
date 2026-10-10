@@ -89,6 +89,18 @@ main:focus { outline: none; }
 .fp { position: absolute; inset: auto 14px 8px; height: 3px; background: var(--line); border-radius: 2px; overflow: hidden; }
 .fp i { display: block; height: 100%; background: var(--ok); }
 
+/* After download */
+.after .tw table td a { color: var(--water); font-weight: 600; text-decoration: none; }
+.after .tw table td a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.after td.an { font-family: var(--mono); font-weight: 600; color: var(--water); width: 52px; }
+.after td.aw { white-space: nowrap; color: var(--ink-2); }
+.rc { margin-top: 12px; padding: 14px 16px; background: var(--paper); border: 1px solid var(--line); border-radius: 10px; }
+.rcl { margin: 0 0 6px; font-size: 13px; font-weight: 700; color: var(--ink-3); }
+.rc pre + .rcl { margin-top: 12px; }
+.rc pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+.rcn { margin: 10px 0 0; font-size: 14px; color: var(--ink-2); }
+.after .note { margin-top: 12px; }
+
 /* Architecture */
 .arch { margin: 0; padding: 20px; background: var(--paper); border: 1px solid var(--line); border-radius: 12px; }
 .arow { position: relative; }
@@ -229,6 +241,7 @@ pre { margin: 0; padding: 14px 16px; overflow-x: auto; background: #0F2233; colo
   .rail .dt { display: none; }
 }
 @media (max-width: 640px) {
+  .after td.aw { white-space: normal; }
   .wrap { padding-inline: 16px; }
   .masthead { padding-block: 32px 28px; }
   .flow { grid-template-columns: 1fr 1fr; }
