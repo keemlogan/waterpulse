@@ -2,7 +2,7 @@
 // 상태: done 끝남 · doing 진행 중 · todo 할 일 · decide 결정 필요 · wait 대기(앞 단계가 끝나야 시작)
 // 내용을 고치면 UPDATED도 바꾼다.
 
-export const UPDATED = "2026-10-10 23:10";
+export const UPDATED = "2026-10-10 23:40";
 export const MIDTERM = { date: "2026-10-19", label: "중간발표 제출", time: "14:00" };
 export const FINAL = { date: "2026-12-07", label: "최종발표 제출", time: "14:00" };
 
@@ -354,7 +354,7 @@ export const GUIDES = [
     table: { head: ["항목", "권장 (일반적인 한 대짜리 하둡 VM 기준, 확인 필요)"], rows: [["CPU", "인텔·AMD 4코어 이상, BIOS에서 가상화(VT-x / AMD-V) 켜기"], ["메모리", "16GB 이상 (VM에 8GB)"], ["저장공간", "SSD 여유 100GB 이상 (이미지 + 원본 약 15GB + 정리본)"], ["운영체제", "64비트 Windows 10/11 (또는 리눅스·인텔 맥)"], ["가상화 프로그램", "VirtualBox 또는 VMware Workstation. WSL2·Hyper-V가 켜져 있으면 VirtualBox가 느려질 수 있어요"]] },
     done: [["교수님 확인 후 권장 사양 확정", false]],
     traps: ["VM 포트를 공개 인터넷에 열지 마세요. 기본 계정·비밀번호가 알려져 있어요. Tailscale처럼 팀원만 들어오는 길로만.", "8GB VM 하나에서 여럿이 동시에 Spark를 돌리면 멈춰요. 무거운 작업은 순서를 정해요.", "본 VM PC는 작업 기간에 켜 두고 잠자기를 꺼요."],
-    links: [{ label: "교수님께 물어볼 것", sub: "할 일 T03", href: "#/t/T03", kind: "할 일" }, { label: "VM을 돌릴 PC 정하기", sub: "할 일 T02", href: "#/t/T02", kind: "할 일" }] },
+    links: [{ label: "교수님께 VM 질문 보내기", sub: "0단계 준비의 할 일", href: "#/t/T03", kind: "할 일" }, { label: "VM을 돌릴 PC 정하기", sub: "0단계 준비의 할 일", href: "#/t/T02", kind: "할 일" }] },
   { id: "G2", title: "전체 구조", figure: "arch", lead: "데이터가 어디서 와서 어디로 가는지 한 장으로. 중간발표 슬라이드 ⑤의 초안이에요.",
     why: "과제는 '구성요소와 그 관계(화면·빅데이터 관리 시스템·DB·웹 서버)'를 그려 달라고 해요.",
     how: ["공공 API → 수집기(Python)가 원본 파일로 저장", "원본 → Flume(또는 hdfs dfs -put) → HDFS 원본 선반 → Hive 원본 표", "Spark 정제 → 정리 선반(Parquet·연도 파티션) → Impala로 조회·측정", "Spark 특징·분석 + Python 모델 → 결과 선반", "Sqoop export → MySQL → 웹 서버 → 방류 계산기 · 재난 상황판", "기준표(좌표·관측소 연결)는 MySQL에서 Sqoop import로 들어와요"] },
@@ -388,7 +388,7 @@ export const GUIDES = [
   { id: "G6", title: "우리가 만드는 것", lead: "비가 오면 몇 시간 뒤 댐에 물이 몰려오는지 미리 맞혀, 운영자와 재난 담당자에게 알려 줘요.",
     why: "팀 회의(10/10)에서 최종 목표를 두 개로 정했어요. 둘은 같은 유입량 예측을 공유해요.",
     how: ["① 방류 계산기(댐 운영자): 넘치지 않으려면 지금 최소 몇 ㎥/s 내보내야 하나.", "② 재난 상황판(재난 담당자): 어느 댐이 몇 시간 뒤 위험해지나.", "공통 엔진: 3·6·12시간 뒤 유입량 예측. 상류 관측소·기상청 날씨로 정확도를 올려요."],
-    links: [{ label: "방류 계산기 할 일", sub: "T60", href: "#/t/T60", kind: "할 일" }, { label: "재난 상황판 할 일", sub: "T61", href: "#/t/T61", kind: "할 일" }, { label: "예측 정확도 올리기", sub: "T52", href: "#/t/T52", kind: "할 일" }, L.webRelease, L.webAlert] },
+    links: [{ label: "방류 계산기", sub: "6단계 웹 화면의 할 일", href: "#/t/T60", kind: "할 일" }, { label: "재난 상황판", sub: "6단계 웹 화면의 할 일", href: "#/t/T61", kind: "할 일" }, { label: "관측소·ASOS로 예측 정확도 올리기", sub: "5단계 분석의 할 일", href: "#/t/T52", kind: "할 일" }, L.webRelease, L.webAlert] },
 ];
 
 // 과제 요구사항: 원문 → 쉬운 말 → 어디서 채우나

@@ -13,6 +13,13 @@ const mdw = (d) => `${md(d)}(${WD[new Date(d + "T12:00:00").getDay()]})`;
 const today = () => { const n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); };
 const daysTo = (d) => Math.round((new Date(d + "T00:00:00") - today()) / 86400000);
 const dday = (d) => { const n = daysTo(d); return n > 0 ? `D-${n}` : n === 0 ? "D-DAY" : `D+${-n}`; };
+// 본문의 할 일 번호(T11, G1, T02~T04)를 그 할 일 이름이 적힌 링크로 바꾼다.
+const ref = (id) => (byId[id] ? `<a class="ref" href="#/t/${id}">${esc(byId[id].title)}</a>` : id);
+const rich = (s) => esc(s).replace(/\bT(\d\d)~T(\d\d)\b|\b([TG]\d{1,2})\b/g, (m, a, b, id) => {
+  if (id) return byId[id] ? ref(id) : m;
+  const ids = TASKS.map((t) => t.id).filter((x) => x >= `T${a}` && x <= `T${b}`);
+  return ids.length ? ids.map(ref).join(" · ") : m;
+});
 const chip = (st) => `<span class="chip ${st}">${STATUS[st]}</span>`;
 const num = (n) => n.toLocaleString("ko-KR");
 const phaseOf = (t) => PHASES.find((p) => p.id === t.phase);
@@ -165,7 +172,7 @@ function archFigure() {
 
 function tableHtml(t) {
   return `<div class="tw"><table><thead><tr>${t.head.map((h) => `<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${
-    t.rows.map((r) => `<tr>${r.map((c) => `<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+    t.rows.map((r) => `<tr>${r.map((c) => `<td>${rich(c)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
 }
 
 function linkCard(l) {
@@ -190,16 +197,16 @@ function detail(id) {
     <nav class="crumbs">${crumb}</nav>
     <h1>${esc(t.title)}</h1>
     <div class="dmeta">${t.status ? chip(t.status) : `<span class="chip guide">가이드</span>`}${t.due ? `<span>마감 ${mdw(t.due)} · ${dday(t.due)}</span>` : ""}${isGuide ? "" : `<span>담당 ${esc(t.owner || "미정")}</span>`}</div>
-    <p class="lead">${esc(t.lead)}</p>
+    <p class="lead">${rich(t.lead)}</p>
     ${t.live ? collectCard(false, true) : ""}
     ${t.figure === "arch" ? archFigure() : ""}
-    ${sec(isGuide ? "배경" : "왜 하나요", t.why ? `<p>${esc(t.why)}</p>` : "")}
-    ${sec(isGuide ? "내용" : "어떻게 하나요", t.how ? `<ol class="how">${t.how.map((s) => `<li>${esc(s)}</li>`).join("")}</ol>` : "")}
+    ${sec(isGuide ? "배경" : "왜 하나요", t.why ? `<p>${rich(t.why)}</p>` : "")}
+    ${sec(isGuide ? "내용" : "어떻게 하나요", t.how ? `<ol class="how">${t.how.map((s) => `<li>${rich(s)}</li>`).join("")}</ol>` : "")}
     ${sec("자세히", t.table ? tableHtml(t.table) : "")}
     ${sec("명령 · 설정 예시", t.code ? `<pre><code>${esc(t.code)}</code></pre>` : "")}
-    ${sec("다 됐다의 기준", t.done ? `<ul class="check">${t.done.map(([s, ok]) => `<li class="${ok ? "ok" : ""}"><span class="box" aria-label="${ok ? "끝남" : "아직"}">${ok ? "✓" : ""}</span>${esc(s)}</li>`).join("")}</ul>` : "")}
-    ${sec("지금 상황", t.now ? `<p class="now">${esc(t.now)}</p>` : "")}
-    ${sec("주의할 점", t.traps ? `<ul class="traps">${t.traps.map((s) => `<li>${esc(s)}</li>`).join("")}</ul>` : "")}
+    ${sec("다 됐다의 기준", t.done ? `<ul class="check">${t.done.map(([s, ok]) => `<li class="${ok ? "ok" : ""}"><span class="box" aria-label="${ok ? "끝남" : "아직"}">${ok ? "✓" : ""}</span>${rich(s)}</li>`).join("")}</ul>` : "")}
+    ${sec("지금 상황", t.now ? `<p class="now">${rich(t.now)}</p>` : "")}
+    ${sec("주의할 점", t.traps ? `<ul class="traps">${t.traps.map((s) => `<li>${rich(s)}</li>`).join("")}</ul>` : "")}
     ${sec("참고 자료", t.links ? `<ul class="list links">${t.links.map(linkCard).join("")}</ul>` : "")}
     <nav class="pager">
       ${prev ? `<a href="#/t/${prev.id}"><span>이전</span>${esc(prev.title)}</a>` : "<span></span>"}
