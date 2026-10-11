@@ -1,14 +1,14 @@
 {
- "updated": "2026-10-12 00:48",
+ "updated": "2026-10-12 01:49",
  "where": "맥미니 ~/WaterPulse",
  "keys": 4,
  "eta": "2026-10-12",
- "state": "running",
+ "state": "done",
  "auto": true,
- "files_have": 13377,
+ "files_have": 13629,
  "files_expected": 13629,
- "rows": 86550734,
- "MB": 22310.4,
+ "rows": 88472167,
+ "MB": 22624.0,
  "dup_files": 0,
  "incomplete": 0,
  "datasets": [
@@ -35,10 +35,10 @@
   {
    "id": "rain_hourly",
    "name": "비 관측소",
-   "have": 3675,
+   "have": 3927,
    "expected": 3927,
-   "rows": 30682075,
-   "MB": 4986.5,
+   "rows": 32603508,
+   "MB": 5300.1,
    "dup": 0,
    "incomplete": 0
   },
