@@ -15,7 +15,7 @@ if [ -b /dev/sdb ]; then
   if ! sudo blkid -L wpdata >/dev/null 2>&1; then
     log "새 디스크 /dev/sdb 파티션·포맷"
     if [ ! -b /dev/sdb1 ]; then printf 'o\nn\np\n1\n\n\nw\n' | sudo fdisk /dev/sdb >/dev/null 2>&1 || true; sudo partprobe /dev/sdb 2>/dev/null || true; sleep 2; fi
-    sudo mkfs.ext4 -q -L wpdata /dev/sdb1
+    sudo mkfs.ext4 -q -E lazy_itable_init=1,lazy_journal_init=1 -L wpdata /dev/sdb1   # 100GB 초기화를 뒤로 미뤄 약 4분 절약
   fi
   sudo mkdir -p /data
   grep -q 'LABEL=wpdata' /etc/fstab || echo 'LABEL=wpdata /data ext4 defaults 0 2' | sudo tee -a /etc/fstab >/dev/null
