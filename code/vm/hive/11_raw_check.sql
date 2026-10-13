@@ -3,11 +3,13 @@
 ADD JAR /usr/lib/hive-hcatalog/share/hcatalog/hive-hcatalog-core.jar;
 USE wp;
 
-SELECT 'dam_hourly' AS t, COUNT(*) AS rows_total, COUNT(obsrdt) AS rows_with_time FROM raw_dam_hourly
-UNION ALL SELECT 'dam_daily', COUNT(*), COUNT(obsryymtde) FROM raw_dam_daily
-UNION ALL SELECT 'rain_hourly', COUNT(*), COUNT(obsrdt) FROM raw_rain_hourly
-UNION ALL SELECT 'level_hourly', COUNT(*), COUNT(obsrdt) FROM raw_level_hourly
-UNION ALL SELECT 'asos_hourly', COUNT(*), COUNT(tm) FROM raw_asos_hourly;
+SELECT * FROM (
+  SELECT 'dam_hourly' AS t, COUNT(*) AS rows_total, COUNT(obsrdt) AS rows_with_time FROM raw_dam_hourly
+  UNION ALL SELECT 'dam_daily', COUNT(*), COUNT(obsryymtde) FROM raw_dam_daily
+  UNION ALL SELECT 'rain_hourly', COUNT(*), COUNT(obsrdt) FROM raw_rain_hourly
+  UNION ALL SELECT 'level_hourly', COUNT(*), COUNT(obsrdt) FROM raw_level_hourly
+  UNION ALL SELECT 'asos_hourly', COUNT(*), COUNT(tm) FROM raw_asos_hourly
+) u;
 
 -- 대소문자 키 확인: stnId·stnNm·taQcflg·floodadjstCpcty·excllncobsrvtcode
 SELECT COUNT(*) AS n, COUNT(stnid) AS stnid_ok, COUNT(stnnm) AS stnnm_ok, COUNT(taqcflg) AS taqcflg_ok FROM raw_asos_hourly;
