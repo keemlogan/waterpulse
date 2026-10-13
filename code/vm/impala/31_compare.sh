@@ -20,6 +20,8 @@ impala-shell -q "INVALIDATE METADATA" >/dev/null 2>&1
 for t in cmp_text_nopart cmp_parquet_nopart clean_dam_hourly; do
   impala-shell -q "COMPUTE STATS wp.$t" 2>&1 | tail -3
 done
+# Impala 2.2의 COMPUTE STATS는 파티션 표의 InputFormat을 Impala 전용 클래스로 바꿔 Hive가 못 읽게 만든다 → 메타스토어에서 되돌림
+bash "$(dirname "$0")/32_fix_metastore_after_stats.sh"
 impala-shell -q "SHOW TABLE STATS wp.clean_dam_hourly" 2>&1
 
 run_impala() {   # run_impala <표> <질의이름> <SQL>

@@ -52,7 +52,8 @@ if mountpoint -q /data; then
 fi
 
 # ── 3) 서비스 ──
-SERVICES="hadoop-hdfs-namenode hadoop-hdfs-datanode hadoop-yarn-resourcemanager hadoop-yarn-nodemanager hadoop-mapreduce-historyserver
+# zookeeper-server: hive.support.concurrency=true라 ZooKeeper가 꺼져 있으면 Hive DDL이 끝없이 기다린다(10/13 실측)
+SERVICES="zookeeper-server hadoop-hdfs-namenode hadoop-hdfs-datanode hadoop-yarn-resourcemanager hadoop-yarn-nodemanager hadoop-mapreduce-historyserver
           hive-metastore hive-server2 impala-state-store impala-catalog impala-server hue"
 for s in $SERVICES; do
   [ -x /etc/init.d/$s ] || { log "서비스 없음: $s"; continue; }
@@ -62,6 +63,32 @@ for s in $SERVICES; do
 done
 sudo -u hdfs hdfs dfsadmin -safemode wait >/dev/null
 log "HDFS: $(sudo -u hdfs hdfs dfsadmin -report 2>/dev/null | grep -m1 'Configured Capacity')"
+
+# ── 3b) YARN 자원 · Hive 설정 ──
+# 기본값은 컨테이너 2개라 map이 하나씩만 돈다. VM을 16GB · 4vCPU로 늘린 전제에서 YARN에 10GB · 8 vcores를 준다.
+# (8vCPU는 CentOS 6이 부팅 중 멈춰서 쓰지 않음)
+Y=/etc/hadoop/conf/yarn-site.xml
+setprop() {
+  if grep -q "<name>$1</name>" $Y; then sudo sed -i "/<name>$1<\/name>/{n;s#<value>.*</value>#<value>$2</value>#}" $Y
+  else sudo sed -i "s#</configuration>#  <property>\n    <name>$1</name>\n    <value>$2</value>\n  </property>\n</configuration>#" $Y; fi
+}
+if ! grep -A1 'yarn.nodemanager.resource.memory-mb' $Y | grep -q 10240; then
+  sudo cp -p $Y $Y.bak_yarnres_$(date +%Y%m%d_%H%M%S)
+  setprop yarn.nodemanager.resource.memory-mb 10240
+  setprop yarn.nodemanager.resource.cpu-vcores 8
+  setprop yarn.scheduler.maximum-allocation-mb 10240
+  sudo service hadoop-yarn-resourcemanager restart >/dev/null 2>&1; sudo service hadoop-yarn-nodemanager restart >/dev/null 2>&1
+fi
+# 작은 gz 파일이 많아(level 497개) map 수가 병목 → 단계 병렬 + 작은 파일 묶기
+cat > ~/.hiverc <<'EOF'
+set hive.exec.parallel=true;
+set hive.exec.parallel.thread.number=6;
+set hive.input.format=org.apache.hadoop.hive.ql.io.CombineHiveInputFormat;
+set mapreduce.input.fileinputformat.split.maxsize=134217728;
+set mapreduce.input.fileinputformat.split.minsize.per.node=67108864;
+set mapreduce.input.fileinputformat.split.minsize.per.rack=67108864;
+EOF
+log "YARN: $(grep -A1 'yarn.nodemanager.resource.memory-mb' $Y | grep -o '<value>[0-9]*' | tr -d '<value>')MB"
 
 # ── 4) Hue 첫 계정 ──
 if ! sudo /usr/lib/hue/build/env/bin/hue shell >/dev/null 2>&1 <<'PY'

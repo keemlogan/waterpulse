@@ -17,16 +17,22 @@ H = int(sys.argv[2]) if len(sys.argv) > 2 else 6
 sc = SparkContext(appName='WaterPulse-first-forecast-%s-%dh' % (DAM, H))
 sq = HiveContext(sc)
 
+# [WaterPulse PC 수정] Spark 1.3은 같은 Hive 표를 4번 자기 조인하면 AnalysisException("resolved attributes ... missing from")을 낸다.
+# 그래서 댐 한 곳의 행을 한 번만 읽고, 역할(t·f·p1·p2)마다 열 이름이 다른 임시 표를 따로 만들어 조인한다(계산은 같다).
+from pyspark.sql.types import StructType, StructField, IntegerType, StringType, DoubleType
+base = sq.sql("SELECT year, ts, hidx, inflow FROM wp.clean_dam_hourly WHERE damcode = '%s' AND inflow IS NOT NULL" % DAM).rdd.map(lambda r: (r[0], r[1], r[2], r[3])).cache()
+for role in ('t', 'f', 'p1', 'p2'):
+    schema = StructType([StructField(role + '_year', IntegerType(), True), StructField(role + '_ts', StringType(), True),
+                         StructField(role + '_hidx', IntegerType(), True), StructField(role + '_in', DoubleType(), True)])
+    sq.createDataFrame(base, schema).registerTempTable(role)
 pairs = sq.sql("""
-SELECT t.year, t.ts, t.inflow AS now_in, f.inflow AS future_in,
-       (t.inflow + p1.inflow + p2.inflow) / 3.0 AS mean3
-FROM wp.clean_dam_hourly t
-JOIN wp.clean_dam_hourly f  ON f.damcode = t.damcode AND f.hidx = t.hidx + %d
-JOIN wp.clean_dam_hourly p1 ON p1.damcode = t.damcode AND p1.hidx = t.hidx - 1
-JOIN wp.clean_dam_hourly p2 ON p2.damcode = t.damcode AND p2.hidx = t.hidx - 2
-WHERE t.damcode = '%s'
-  AND t.inflow IS NOT NULL AND f.inflow IS NOT NULL AND p1.inflow IS NOT NULL AND p2.inflow IS NOT NULL
-""" % (H, DAM))
+SELECT t_year AS year, t_ts AS ts, t_in AS now_in, f_in AS future_in,
+       (t_in + p1_in + p2_in) / 3.0 AS mean3
+FROM t
+JOIN f  ON f_hidx = t_hidx + %d
+JOIN p1 ON p1_hidx = t_hidx - 1
+JOIN p2 ON p2_hidx = t_hidx - 2
+""" % H)
 pairs.registerTempTable('pairs')
 pairs.cache()
 

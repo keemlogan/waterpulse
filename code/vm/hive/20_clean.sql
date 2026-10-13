@@ -183,7 +183,7 @@ SELECT a.q_stn, a.tm, hr.hidx,
             ELSE CAST(regexp_replace(rn, ',', '') AS DOUBLE) END,
        nvl(rnqcflg = '9', false),
        nvl(rn, '') = '' AND nvl(rnqcflg, '') = '',
-       CAST(ta AS DOUBLE), CAST(hm AS DOUBLE), CAST(ws AS DOUBLE), CAST(dsnw AS DOUBLE), CAST(ts AS DOUBLE),
+       CAST(ta AS DOUBLE), CAST(hm AS DOUBLE), CAST(ws AS DOUBLE), CAST(dsnw AS DOUBLE), CAST(a.ts AS DOUBLE),
        CAST(substr(a.tm, 1, 4) AS INT)
 FROM raw_asos_hourly a LEFT OUTER JOIN hours hr ON a.tm = hr.ts;
 

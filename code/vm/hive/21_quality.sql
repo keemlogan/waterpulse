@@ -27,29 +27,29 @@ DROP TABLE IF EXISTS quality_summary;
 CREATE TABLE quality_summary STORED AS PARQUET AS
 SELECT * FROM (
   SELECT 'dam_hourly' AS dataset, 'raw rows' AS item, COUNT(*) AS n FROM raw_dam_hourly
-  UNION ALL SELECT 'dam_hourly', 'clean rows (incl. gap rows)', COUNT(*) FROM clean_dam_hourly
-  UNION ALL SELECT 'dam_hourly', 'R9 gap hours made visible', SUM(IF(is_gap, 1, 0)) FROM clean_dam_hourly
-  UNION ALL SELECT 'dam_hourly', 'R2 hour 24 -> next day 00', SUM(IF(fix_hour24, 1, 0)) FROM clean_dam_hourly
-  UNION ALL SELECT 'dam_hourly', 'R3 comma numbers', SUM(IF(fix_comma, 1, 0)) FROM clean_dam_hourly
-  UNION ALL SELECT 'dam_hourly', 'R4 inflow <= 0 flagged', SUM(IF(inflow_le0, 1, 0)) FROM clean_dam_hourly
-  UNION ALL SELECT 'dam_hourly', 'R5 impossible inflow -> NULL', SUM(IF(inflow_outlier, 1, 0)) FROM clean_dam_hourly
-  UNION ALL SELECT 'dam_daily', 'raw rows', COUNT(*) FROM raw_dam_daily
-  UNION ALL SELECT 'dam_daily', 'R3 comma numbers', SUM(IF(fix_comma, 1, 0)) FROM clean_dam_daily
-  UNION ALL SELECT 'dam_daily', 'R4 inflow <= 0 flagged', SUM(IF(inflow_le0, 1, 0)) FROM clean_dam_daily
-  UNION ALL SELECT 'rain_hourly', 'raw rows', COUNT(*) FROM raw_rain_hourly
-  UNION ALL SELECT 'rain_hourly', 'clean rows', COUNT(*) FROM clean_rain_hourly
-  UNION ALL SELECT 'rain_hourly', 'R6 hour 24:00 -> next day 00:00', SUM(IF(fix_hour24, 1, 0)) FROM clean_rain_hourly
-  UNION ALL SELECT 'rain_hourly', 'R3 comma numbers', SUM(IF(fix_comma, 1, 0)) FROM clean_rain_hourly
-  UNION ALL SELECT 'rain_hourly', 'R7 test stations', COUNT(*) FROM test_stations WHERE kind = 'rain'
-  UNION ALL SELECT 'level_hourly', 'raw rows', COUNT(*) FROM raw_level_hourly
-  UNION ALL SELECT 'level_hourly', 'clean rows', COUNT(*) FROM clean_level_hourly
-  UNION ALL SELECT 'level_hourly', 'R6 hour 24:00 -> next day 00:00', SUM(IF(fix_hour24, 1, 0)) FROM clean_level_hourly
-  UNION ALL SELECT 'level_hourly', 'R3 comma numbers', SUM(IF(fix_comma, 1, 0)) FROM clean_level_hourly
-  UNION ALL SELECT 'level_hourly', 'R7 test stations', COUNT(*) FROM test_stations WHERE kind = 'level'
-  UNION ALL SELECT 'asos_hourly', 'raw rows', COUNT(*) FROM raw_asos_hourly
-  UNION ALL SELECT 'asos_hourly', 'clean rows', COUNT(*) FROM clean_asos_hourly
-  UNION ALL SELECT 'asos_hourly', 'R8 blank rain -> 0 mm', SUM(IF(rain_blank_zero, 1, 0)) FROM clean_asos_hourly
-  UNION ALL SELECT 'asos_hourly', 'R8 rain flag 9 -> missing', SUM(IF(rain_missing, 1, 0)) FROM clean_asos_hourly
+  UNION ALL SELECT 'dam_hourly' AS dataset, 'clean rows (incl. gap rows)' AS item, COUNT(*) AS n FROM clean_dam_hourly
+  UNION ALL SELECT 'dam_hourly' AS dataset, 'R9 gap hours made visible' AS item, SUM(IF(is_gap, 1, 0)) AS n FROM clean_dam_hourly
+  UNION ALL SELECT 'dam_hourly' AS dataset, 'R2 hour 24 -> next day 00' AS item, SUM(IF(fix_hour24, 1, 0)) AS n FROM clean_dam_hourly
+  UNION ALL SELECT 'dam_hourly' AS dataset, 'R3 comma numbers' AS item, SUM(IF(fix_comma, 1, 0)) AS n FROM clean_dam_hourly
+  UNION ALL SELECT 'dam_hourly' AS dataset, 'R4 inflow <= 0 flagged' AS item, SUM(IF(inflow_le0, 1, 0)) AS n FROM clean_dam_hourly
+  UNION ALL SELECT 'dam_hourly' AS dataset, 'R5 impossible inflow -> NULL' AS item, SUM(IF(inflow_outlier, 1, 0)) AS n FROM clean_dam_hourly
+  UNION ALL SELECT 'dam_daily' AS dataset, 'raw rows' AS item, COUNT(*) AS n FROM raw_dam_daily
+  UNION ALL SELECT 'dam_daily' AS dataset, 'R3 comma numbers' AS item, SUM(IF(fix_comma, 1, 0)) AS n FROM clean_dam_daily
+  UNION ALL SELECT 'dam_daily' AS dataset, 'R4 inflow <= 0 flagged' AS item, SUM(IF(inflow_le0, 1, 0)) AS n FROM clean_dam_daily
+  UNION ALL SELECT 'rain_hourly' AS dataset, 'raw rows' AS item, COUNT(*) AS n FROM raw_rain_hourly
+  UNION ALL SELECT 'rain_hourly' AS dataset, 'clean rows' AS item, COUNT(*) AS n FROM clean_rain_hourly
+  UNION ALL SELECT 'rain_hourly' AS dataset, 'R6 hour 24:00 -> next day 00:00' AS item, SUM(IF(fix_hour24, 1, 0)) AS n FROM clean_rain_hourly
+  UNION ALL SELECT 'rain_hourly' AS dataset, 'R3 comma numbers' AS item, SUM(IF(fix_comma, 1, 0)) AS n FROM clean_rain_hourly
+  UNION ALL SELECT 'rain_hourly' AS dataset, 'R7 test stations' AS item, COUNT(*) AS n FROM test_stations WHERE kind = 'rain'
+  UNION ALL SELECT 'level_hourly' AS dataset, 'raw rows' AS item, COUNT(*) AS n FROM raw_level_hourly
+  UNION ALL SELECT 'level_hourly' AS dataset, 'clean rows' AS item, COUNT(*) AS n FROM clean_level_hourly
+  UNION ALL SELECT 'level_hourly' AS dataset, 'R6 hour 24:00 -> next day 00:00' AS item, SUM(IF(fix_hour24, 1, 0)) AS n FROM clean_level_hourly
+  UNION ALL SELECT 'level_hourly' AS dataset, 'R3 comma numbers' AS item, SUM(IF(fix_comma, 1, 0)) AS n FROM clean_level_hourly
+  UNION ALL SELECT 'level_hourly' AS dataset, 'R7 test stations' AS item, COUNT(*) AS n FROM test_stations WHERE kind = 'level'
+  UNION ALL SELECT 'asos_hourly' AS dataset, 'raw rows' AS item, COUNT(*) AS n FROM raw_asos_hourly
+  UNION ALL SELECT 'asos_hourly' AS dataset, 'clean rows' AS item, COUNT(*) AS n FROM clean_asos_hourly
+  UNION ALL SELECT 'asos_hourly' AS dataset, 'R8 blank rain -> 0 mm' AS item, SUM(IF(rain_blank_zero, 1, 0)) AS n FROM clean_asos_hourly
+  UNION ALL SELECT 'asos_hourly' AS dataset, 'R8 rain flag 9 -> missing' AS item, SUM(IF(rain_missing, 1, 0)) AS n FROM clean_asos_hourly
 ) u;
 
 SELECT * FROM quality_summary;

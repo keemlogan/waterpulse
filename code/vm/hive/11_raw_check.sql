@@ -5,10 +5,10 @@ USE wp;
 
 SELECT * FROM (
   SELECT 'dam_hourly' AS t, COUNT(*) AS rows_total, COUNT(obsrdt) AS rows_with_time FROM raw_dam_hourly
-  UNION ALL SELECT 'dam_daily', COUNT(*), COUNT(obsryymtde) FROM raw_dam_daily
-  UNION ALL SELECT 'rain_hourly', COUNT(*), COUNT(obsrdt) FROM raw_rain_hourly
-  UNION ALL SELECT 'level_hourly', COUNT(*), COUNT(obsrdt) FROM raw_level_hourly
-  UNION ALL SELECT 'asos_hourly', COUNT(*), COUNT(tm) FROM raw_asos_hourly
+  UNION ALL SELECT 'dam_daily' AS t, COUNT(*) AS rows_total, COUNT(obsryymtde) AS rows_with_time FROM raw_dam_daily
+  UNION ALL SELECT 'rain_hourly' AS t, COUNT(*) AS rows_total, COUNT(obsrdt) AS rows_with_time FROM raw_rain_hourly
+  UNION ALL SELECT 'level_hourly' AS t, COUNT(*) AS rows_total, COUNT(obsrdt) AS rows_with_time FROM raw_level_hourly
+  UNION ALL SELECT 'asos_hourly' AS t, COUNT(*) AS rows_total, COUNT(tm) AS rows_with_time FROM raw_asos_hourly
 ) u;
 
 -- 대소문자 키 확인: stnId·stnNm·taQcflg·floodadjstCpcty·excllncobsrvtcode

@@ -23,6 +23,6 @@ FROM clean_dam_hourly;
 
 SELECT * FROM (
   SELECT 'text' AS t, COUNT(*) AS n FROM cmp_text_nopart
-  UNION ALL SELECT 'parquet_nopart', COUNT(*) FROM cmp_parquet_nopart
-  UNION ALL SELECT 'parquet_year', COUNT(*) FROM clean_dam_hourly
+  UNION ALL SELECT 'parquet_nopart' AS t, COUNT(*) AS n FROM cmp_parquet_nopart
+  UNION ALL SELECT 'parquet_year' AS t, COUNT(*) AS n FROM clean_dam_hourly
 ) u;

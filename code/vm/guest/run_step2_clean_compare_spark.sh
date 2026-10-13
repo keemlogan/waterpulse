@@ -31,7 +31,7 @@ echo "[Impala]"; impala-shell -B -q "$Q" 2>/dev/null | tee "$L/step2_rowcheck_im
 # Spark 1.3 HiveContext가 Hive 메타스토어를 보려면 hive-site.xml이 Spark 설정 폴더에 있어야 한다
 [ -e /etc/spark/conf/hive-site.xml ] || sudo ln -s /etc/hive/conf/hive-site.xml /etc/spark/conf/hive-site.xml
 echo "### CAPTURE: Spark_YARN_제출"
-spark-submit --master yarn-client --num-executors 2 --executor-memory 1g --driver-memory 1g \
+PYTHONIOENCODING=utf8 spark-submit --master yarn-client --num-executors 2 --executor-memory 1g --driver-memory 1g \
   "$HERE/spark/40_first_forecast.py" 1012110 6 2>&1 | tee "$L/step2_spark.txt"
 echo "### CAPTURE: 브라우저_YARN_ResourceManager_http://localhost:8088/cluster/apps"
 echo "### CAPTURE: 브라우저_Hue_Impala_SELECT_*_FROM_wp.mart_first_forecast"
