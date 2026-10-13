@@ -32,6 +32,11 @@ echo "검증 결과: 파일 $n개 · 원본 줄 합계 $rows · 불일치 $bad"
 [ "$bad" -eq 0 ] || { echo "검증 실패 — HDFS에 올리지 않음"; exit 1; }
 
 echo "### CAPTURE: HDFS_올리기_${NAME}"
+# HDFS 루트(/)는 hdfs 계정 소유라 training이 /etl을 만들 수 없다 → 처음 한 번만 hdfs 계정으로 만들고 넘겨준다
+if ! hdfs dfs -test -d /etl/waterpulse; then
+  sudo -u hdfs hdfs dfs -mkdir -p /etl/waterpulse
+  sudo -u hdfs hdfs dfs -chown -R training /etl /etl/waterpulse
+fi
 for ds in dam_hourly dam_daily rain_hourly level_hourly asos_hourly; do
   [ -d "$ds" ] || continue
   hdfs dfs -mkdir -p "$HDFS_RAW/$ds"
