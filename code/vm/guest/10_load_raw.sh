@@ -17,6 +17,8 @@ cd "$WORK"
 ls -la; du -sh .
 
 echo "### CAPTURE: MANIFEST_검증_${NAME}"
+# 묶음 v1의 MANIFEST는 칸 구분자가 탭 대신 글자 "\t"로 들어갔다(생성 스크립트 버그, 10/13). 두 형식 모두 읽는다.
+sed -i 's/\\t/\t/g' MANIFEST.tsv
 n=0; rows=0; bad=0
 while IFS=$'\t' read -r f lines sha; do
   n=$((n + 1))
