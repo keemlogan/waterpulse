@@ -28,8 +28,10 @@ run_impala() {   # run_impala <표> <질의이름> <SQL>
   for i in 1 2 3; do
     impala-shell -p -q "$3" > "$L/impala_${1}_${2}_$i.txt" 2>&1
     sec=$(grep -o 'Fetched [0-9]* row(s) in [0-9.]*s' "$L/impala_${1}_${2}_$i.txt" | tail -1 | sed 's/.* in \([0-9.]*\)s/\1/')
-    # 스캔 노드들의 BytesRead 합(프로필의 단위 표기 그대로 남기고, 원값 괄호 안 숫자를 더함)
-    bytes=$(grep -o 'BytesRead: [^)]*([0-9]*)' "$L/impala_${1}_${2}_$i.txt" | sed 's/.*(\([0-9]*\))/\1/' | awk '{s+=$1} END {print s+0}')
+    # 스캔 노드들의 BytesRead 합. 프로필에는 같은 값이 "Averaged Fragment"(평균)와 "Instance"(실제) 두 곳에 나오므로
+    # Instance 블록 안의 값만 더한다(10/13 실측: 전부 더하면 정확히 2배가 됨).
+    bytes=$(awk '/Averaged Fragment|Coordinator Fragment/{inst=0} /^ *Instance /{inst=1} inst' "$L/impala_${1}_${2}_$i.txt" \
+            | grep -o 'BytesRead: [^)]*([0-9]*)' | sed 's/.*(\([0-9]*\))/\1/' | awk '{s+=$1} END {print s+0}')
     printf "%s\t%s\timpala\t%s\t%s\t%s\n" "$1" "$2" "$i" "${sec:-NA}" "$bytes" >> "$OUT"
   done
 }
